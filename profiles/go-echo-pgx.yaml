@@ -1,0 +1,6 @@
+id: go-echo-pgx
+version: "1"
+type: technology
+language: go
+backend: echo
+database: pgx+sqlc
