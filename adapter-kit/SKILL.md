@@ -1,18 +1,33 @@
 ---
 name: adapter-kit
 description: Map an approved domain contract to replaceable backend, database, transport, or UI conventions.
+schema_version: "1"
 ---
 
 # adapter-kit
 
-This skill is available only after ddd-core's design-confirmation point and the separate approval to implement one named slice. Never read or invoke adapter-kit for ordinary requirements, while the design is a draft, or before the implementation approval. Do not auto-chain skills or infer either approval.
+## Trigger
 
-1. Read the project stack configuration (for example `.ddd/project.yaml`) and one selected, versioned profile only after the gate; infer existing settings before asking.
-2. Keep domain meaning independent of framework, database, transport, and UI; display wording stays at the presentation edge.
-3. Reuse existing repository patterns, record unknown conventions as pending, and allow an explicit per-task profile override without changing defaults.
-4. Match a profile exactly on `framework`, `component_library`, `variant`, and `target`. Bare React + Ant Design selects `react-antd`; never upgrade it to `react-antd-pro`; admin must explicitly select `react-antd-pro`.
-5. Verify adapters with focused contract tests and one observable path for the approved slice.
-6. Report unsupported capabilities; never drop or reinterpret a core rule. Do not add or implement a cloud-drive adapter unless a separate, explicit slice approval authorizes it.
+Use only after the gates in `ddd.interaction`; read one selected, versioned profile only after that gate.
 
-Do not add a generic abstraction without a second concrete consumer or pre-generate unused adapters. Stop if the approval or profile is missing instead of routing to another skill.
+## Responsibilities
 
+- Read the project stack configuration and selected profile, reusing existing repository conventions.
+- Infer existing settings before asking; allow an explicit per-task profile override without changing defaults.
+- Keep domain meaning independent of framework, database, transport, and UI; keep display wording at the presentation edge.
+- Map only the approved slice, preserve core rules, and report unsupported capabilities or pending conventions.
+
+## Output contract
+
+Return the selected profile, adapter decisions, focused contract checks, one observable path for the approved slice, and any unsupported capability or pending convention.
+
+## Hard stops
+
+Apply `ddd.interaction` and `ddd.lifecycle` without local gate exceptions. Stop when the exact profile is missing. Do not add a generic abstraction without a second concrete consumer, pre-generate unused adapters, or add a cloud-drive adapter without a separate explicit slice approval.
+
+## Canonical rules
+
+- [Interaction and gates](../ddd-core/rules/interaction.md) (`ddd.interaction`)
+- [Four-stage lifecycle](../ddd-core/rules/lifecycle.md) (`ddd.lifecycle`)
+- [Domain model](../ddd-core/rules/domain-model.md) (`ddd.domain-model`)
+- [Profile schema](profiles/schema.md) (`adapter.profile`)

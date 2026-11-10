@@ -1,4 +1,25 @@
+schema_version: "1"
 id: react-antd-pro
 version: "1"
 type: ui
+language: typescript
 framework: antd-pro
+component_library: antd
+variant: pro
+targets:
+  public:
+    enabled: true
+    component_library: antd
+    variant: pro
+  admin:
+    enabled: true
+    component_library: antd
+    variant: pro
+selection:
+  match:
+    framework: antd-pro
+    component_library: antd
+    variant: pro
+  require_explicit_target: true
+  never_infer_pro: true
+  standard_companion: react-antd
