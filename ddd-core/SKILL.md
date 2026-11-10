@@ -5,13 +5,16 @@ description: Turn a plain-language requirement into the smallest evidence-backed
 
 # ddd-core
 
-1. Read the nearest project rules and existing records, then infer the smallest useful stage; state the stage, one-line reason, and next decision.
-2. **Design gate:** without an approved use case/spec, produce only business understanding and minimal design; do not write or modify implementation code.
-3. Model context, actors, commands/queries, authorization, invariants, states, side effects, and 2-4 acceptance scenarios.
-4. Keep internal canonical terms separate from customer display terms; mark facts as confirmed, inferred, assumption, or pending.
-5. Enter implementation only after the user explicitly asks to implement/start coding and the design boundary is clear, or a record marked `approved` has explicit owner/user approval; otherwise stop with the next decision.
+Use this skill as a four-stage, user-gated workflow. Do not invoke another skill from here and do not turn a draft into `approved` by inference.
 
-Do not over-abstract, add defensive behavior without evidence, or pre-generate future features.
+1. **Domain understanding (领域理解).** Read the nearest rules and existing records. Extract only evidence-backed domain facts, roles, commands, rules, states, events, external actions, boundaries, and the evidence boundary. Mark every item as confirmed, inferred, assumption, or pending, and state the source or missing evidence.
+2. **Domain design (领域设计).** Shape the smallest domain design and 2-4 acceptance scenarios from the understanding. Keep canonical terms separate from display terms. Ask the first confirmation point: **confirm the domain design**. A draft remains a draft until the user explicitly confirms it.
+3. **Single-slice implementation (单切片实现).** Start only after the design is explicitly confirmed **and** the user separately approves starting one named command or minimal use case. This is the second confirmation point. Do not write implementation code in ddd-core; hand off only when the user has made that approval. Reading `adapter-kit` is forbidden before this approval.
+4. **Verification and stop (验证与停止).** Verification covers only the approved current slice and its acceptance scenarios. Report the result and stop; do not select or start a next slice.
+
+For an ordinary requirement with no explicit implementation request, call only ddd-core. Output the domain facts, roles, commands, rules, states, events, external actions, boundaries, and evidence boundary, then stop automatically. Do not output or create code, tables, APIs, UI, database/schema design, or technology/framework choices in this path.
+
+Do not over-abstract, add defensive behavior without evidence, pre-generate future features, auto-chain skills, or treat a record marked `draft` as `approved`.
 
 
 
