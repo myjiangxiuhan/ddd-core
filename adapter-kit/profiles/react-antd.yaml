@@ -1,0 +1,24 @@
+id: react-antd
+version: "1"
+type: ui
+language: typescript
+framework: react
+component_library: antd
+variant: standard
+targets:
+  public:
+    enabled: true
+    component_library: antd
+    variant: standard
+  admin:
+    enabled: true
+    component_library: antd
+    variant: standard
+selection:
+  match:
+    framework: react
+    component_library: antd
+    variant: standard
+  require_explicit_target: true
+  never_infer_pro: true
+  pro_companion: react-antd-pro
