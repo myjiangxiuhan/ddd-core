@@ -9,5 +9,5 @@ Every profile declares `schema_version`, `id`, `version`, and `type`. UI profile
 
 Selection matches the declared `framework`, `component_library`, and `variant` exactly and requires an explicit target when `require_explicit_target` is true. Bare React plus Ant Design selects `react-antd`; `react-antd-pro` is never inferred or substituted for it. An admin target uses `react-antd-pro` only when that profile is explicitly selected.
 
-Do not reinterpret a profile's technology choice. Record an unsupported capability or unknown convention as pending instead of silently changing the profile.
+Profile confirmation is a separate user gate after domain design and slice approval. Do not reinterpret a profile's technology choice or select a profile from a deferred capability. Record an unsupported capability or unknown convention as pending instead of silently changing the profile.
 

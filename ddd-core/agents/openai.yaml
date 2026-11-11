@@ -1,0 +1,6 @@
+interface:
+  display_name: "DDD Core"
+  short_description: "Model one domain slice and stop at gates"
+  default_prompt: "Use $ddd-core to interview me about this requirement, record my decisions, and stop before implementation."
+policy:
+  allow_implicit_invocation: false

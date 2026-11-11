@@ -1,0 +1,6 @@
+interface:
+  display_name: "Delivery Loop"
+  short_description: "Implement one approved slice and verify it"
+  default_prompt: "Use $delivery-loop to implement only the approved active slice and stop after verification."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Adapter Kit"
+  short_description: "Choose one exact technology profile"
+  default_prompt: "Use $adapter-kit to present and record one explicit technology profile for the approved slice without implementing it."
+policy:
+  allow_implicit_invocation: false

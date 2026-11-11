@@ -1,0 +1,6 @@
+interface:
+  display_name: "Repair Loop"
+  short_description: "Reproduce and fix one confirmed bug"
+  default_prompt: "Use $repair-loop to reproduce this failure, fix it at the approved seam, and prove the regression is gone."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Rule Workbench"
+  short_description: "Maintain decisions and workflow records"
+  default_prompt: "Use $rule-workbench to update the project's traceable rules and decision records without changing gates implicitly."
+policy:
+  allow_implicit_invocation: false
