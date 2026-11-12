@@ -11,9 +11,10 @@ Every implementation cycle has exactly one `active_slice`. It names one user-vis
 
 ## Decision ownership
 
-Keep a decision register with three sources:
+Keep a decision register with four sources:
 
 - `user_decision`: the user explicitly chose it or supplied the rule.
+- `agent_recommendation`: a proposed default with a stated consequence; it is not a decision until the user accepts it.
 - `agent_inference`: a traceable reading of existing code, records, or external evidence; it stays revisable.
 - `pending`: the user has not decided or the evidence conflicts.
 

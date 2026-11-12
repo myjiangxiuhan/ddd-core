@@ -1,0 +1,59 @@
+schema_version: "1"
+id: ddd-default
+version: "1"
+description: "DDD-aware review profile with independent standards, spec, DDD, UI, and custom axes."
+checks:
+  - id: standards-repository-rules
+    axis: standards
+    severity: blocker
+    blocking: true
+    rule: "Changed code follows AGENTS.md, CONTRIBUTING.md, CODING_STANDARDS.md, selected profile, and nearest local conventions."
+    evidence: ["AGENTS.md", "nearest repository rules"]
+  - id: standards-smell-baseline
+    axis: standards
+    severity: minor
+    blocking: false
+    rule: "Use labelled Fowler smell heuristics: mysterious name, duplicated code, feature envy, data clumps, primitive obsession, repeated switches, shotgun surgery, divergent change, speculative generality, message chains, middle man, and refused bequest."
+    evidence: ["review diff"]
+  - id: spec-confirmed-decisions
+    axis: spec
+    severity: blocker
+    blocking: true
+    rule: "Every material behaviour in the diff traces to a confirmed decision or active-slice acceptance scenario."
+    evidence: [".ddd/workflow-state.json", "active slice record", "spec source"]
+  - id: ddd-slice-boundary
+    axis: ddd
+    severity: blocker
+    blocking: true
+    rule: "The diff stays inside the approved active slice and does not implement deferred capabilities."
+    evidence: ["active slice", "deferred capabilities", "git diff"]
+  - id: ddd-domain-boundary
+    axis: ddd
+    severity: major
+    blocking: true
+    rule: "Domain rules and invariants stay technology-neutral; adapters own framework, persistence, transport, and cache details."
+    evidence: ["domain design", "codebase design rules", "git diff"]
+  - id: ddd-evidence-traceability
+    axis: ddd
+    severity: major
+    blocking: true
+    rule: "Each material behaviour has a source decision, acceptance scenario, or explicit user evidence."
+    evidence: ["decision register", "acceptance scenarios", "test output"]
+  - id: ui-library-first
+    axis: ui
+    severity: major
+    blocking: true
+    rule: "When the selected UI profile already provides a suitable primitive, use it or record a confirmed reason for a wrapper or replacement."
+    evidence: [".ddd/ui-catalog.yaml", ".ddd/ui-plan.yaml", "selected technology profile"]
+  - id: ui-composition-boundary
+    axis: ui
+    severity: major
+    blocking: true
+    rule: "Page, feature, domain, and library layers have one clear responsibility; repeated state logic belongs in a hook or feature module instead of duplicated JSX."
+    evidence: [".ddd/ui-plan.yaml", "git diff"]
+  - id: ui-scaffold-contract
+    axis: ui
+    severity: major
+    blocking: true
+    rule: "Generated files match the approved scaffold kind, target, naming, and public seam."
+    evidence: [".ddd/ui-plan.yaml", ".ddd/scaffold.yaml", "git diff"]

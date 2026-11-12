@@ -1,0 +1,6 @@
+interface:
+  display_name: "Retro Loop"
+  short_description: "Improve the agent workflow after a session"
+  default_prompt: "Use $retro-loop to turn this session's failures into one approved deterministic workflow improvement."
+policy:
+  allow_implicit_invocation: false

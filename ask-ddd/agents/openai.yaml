@@ -1,0 +1,6 @@
+interface:
+  display_name: "Ask DDD"
+  short_description: "Choose the next DDD workflow"
+  default_prompt: "Use $ask-ddd to route this request to one explicit workflow without executing it."
+policy:
+  allow_implicit_invocation: false

@@ -9,6 +9,8 @@ description: Maintain traceable project terms, user decisions, rules, and workfl
 
 This is a user-invoked record-maintenance entrypoint. Use it when the user asks to update project rules, terms, decisions, or workflow records. It may normalize evidence and links, but it must not silently approve a design or implementation.
 
+Read [record layout](references/record-layout.md) before creating or moving a durable record, and [writing for agents](references/writing-for-agents.md) before changing a skill or AGENTS.md pointer.
+
 ## Responsibilities
 
 - Link each rule to one context, source, stable ID, scope, decision owner, and status.
@@ -30,5 +32,6 @@ Report pure rule checks, conflicts, missing evidence, assumptions, pending decis
 
 - [Scope and future-capability rules](../ddd-core/rules/scope.md) (`ddd.scope`)
 - [Workflow state](../ddd-core/rules/workflow-state.md) (`ddd.workflow-state`)
+- [Canonical workflow keywords](../ddd-core/rules/keywords.md) (`ddd.keywords`)
 - [Evidence](../ddd-core/rules/evidence.md) (`ddd.evidence`)
 - [Domain model](../ddd-core/rules/domain-model.md) (`ddd.domain-model`)

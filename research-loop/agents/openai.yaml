@@ -1,0 +1,6 @@
+interface:
+  display_name: "Research Loop"
+  short_description: "Collect primary-source evidence"
+  default_prompt: "Use $research-loop to investigate this factual question against primary sources and save a cited note."
+policy:
+  allow_implicit_invocation: false

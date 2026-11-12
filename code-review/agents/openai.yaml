@@ -1,0 +1,6 @@
+interface:
+  display_name: "Code Review"
+  short_description: "Review one verified slice on separate DDD axes"
+  default_prompt: "Use $code-review to review this verified slice from the fixed point I provide, including the configured UI and custom checks, without editing code."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prototype Loop"
+  short_description: "Answer one design question experimentally"
+  default_prompt: "Use $prototype-loop to build a throwaway experiment for this one design question and report the evidence."
+policy:
+  allow_implicit_invocation: false

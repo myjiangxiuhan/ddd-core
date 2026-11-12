@@ -1,0 +1,6 @@
+interface:
+  display_name: "Project Wayfinder"
+  short_description: "Map big decisions before implementation"
+  default_prompt: "Use $project-wayfinder to map this multi-session effort as named decisions with blockers, without implementing it."
+policy:
+  allow_implicit_invocation: false

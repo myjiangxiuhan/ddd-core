@@ -1,0 +1,6 @@
+interface:
+  display_name: "Triage Loop"
+  short_description: "Classify and prepare incoming work"
+  default_prompt: "Use $triage-loop to classify this raw report and produce a ready brief without implementing it."
+policy:
+  allow_implicit_invocation: false

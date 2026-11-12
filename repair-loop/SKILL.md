@@ -7,21 +7,23 @@ description: Reproduce, isolate, fix, and regression-test one confirmed bug with
 
 ## Invocation
 
-This is a user-invoked repair entrypoint. Use it for a concrete bug, failing acceptance scenario, regression, or performance failure in an existing slice. It is not a route for new features or for silently finishing an incomplete design.
+This is a user-invoked repair entrypoint. Use it for a concrete bug, failing acceptance scenario, regression, performance failure, or blocking `$code-review` finding in an existing slice. It is not a route for new features or for silently finishing an incomplete design.
 
 Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), and the active slice's acceptance scenarios before editing. Redact secrets from commands, logs, requests, and captured artifacts.
 Before editing, run the bundled read-only gate check for `--require repair`. A non-zero result is a hard stop; report its reason instead of repairing the ledger silently.
 
 ## Process
 
-1. **Capture.** Record the active slice, expected behavior, actual behavior, trigger, environment, and the smallest evidence supplied by the user. If the report is ambiguous, ask exactly one question and stop.
+1. **Capture.** Record the active slice, expected behavior, actual behavior, trigger, environment, and the smallest evidence supplied by the user. If the report came from code review, preserve the finding id, axis, rule, and file evidence. If the report is ambiguous, ask exactly one question and stop.
 2. **Red.** Build a repeatable failing signal at the highest existing public seam: a test, HTTP/CLI harness, browser check, trace replay, or minimal harness. Do not start by reading random code or changing implementation.
 3. **Minimize.** Reduce the reproduction to the smallest input and preserve the failing artifact. Mark the result as `confirmed` only when it reliably fails.
 4. **Hypothesize.** Generate 2-4 ranked, falsifiable causes and show the prediction for each. Ask the user to re-rank or rule out one before instrumenting. Keep product decisions `pending`; do not let the first plausible cause become the fix plan.
 5. **Instrument.** Run one targeted experiment at a time, tied to a hypothesis. Record what the user decision or evidence changed.
 6. **Fix.** Make the smallest change that restores the approved behavior. If the fix needs a new actor, command, invariant, boundary, schema contract, or capability, stop and return to `ddd-core` for a new design gate.
 7. **Regression.** Run the red signal, the focused slice checks, and the affected acceptance scenarios. Add a regression test at the agreed public seam when the seam is stable.
-8. **Stop.** Persist `delivery: verified` when the failure is fixed, or `delivery: blocked` with the exact evidence when it is not. Report the reproduction, hypothesis ranking, change, checks, and remaining uncertainty. Do not start the next feature.
+8. **Stop.** Persist `delivery: verified` when the failure is fixed, or `delivery: blocked` with the exact evidence when it is not. Any repair resets the review gate to `not_started`; a later explicit `$code-review` is required before the slice can be reset. Report the reproduction, hypothesis ranking, change, checks, and remaining uncertainty. Do not start the next feature.
+
+Use `workflow_gate.py --state .ddd/workflow-state.json --transition start-repair` before the repair and `verify` or `block` after the regression result. Do not edit the gate field directly.
 
 ## Output contract
 

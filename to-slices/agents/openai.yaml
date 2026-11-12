@@ -1,0 +1,6 @@
+interface:
+  display_name: "To Slices"
+  short_description: "Plan vertical slices and blockers"
+  default_prompt: "Use $to-slices to break this confirmed spec into vertical slices with blockers and ask me to approve the breakdown."
+policy:
+  allow_implicit_invocation: false
