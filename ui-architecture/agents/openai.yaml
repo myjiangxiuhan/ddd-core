@@ -1,0 +1,6 @@
+interface:
+  display_name: "UI Architecture"
+  short_description: "Research components and design one UI slice"
+  default_prompt: "Use $ui-architecture to collect current library evidence and produce a user-confirmed component plan for the active slice before writing UI code."
+policy:
+  allow_implicit_invocation: false

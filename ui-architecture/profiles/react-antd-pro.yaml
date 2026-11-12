@@ -1,0 +1,23 @@
+schema_version: "1"
+id: react-antd-pro
+version: "1"
+library: "@ant-design/pro-components"
+source_urls:
+  - "https://procomponents.ant.design/"
+component_candidates:
+  list: "ProTable"
+  form: "ProForm"
+  detail: "ProDescriptions"
+  layout: "ProLayout"
+  composition: "ProCard"
+  loading: "ProSkeleton"
+selection_rules:
+  - "Prefer a profile component when its page shape matches the requirement."
+  - "Keep domain decisions and request mapping outside the visual primitive."
+  - "Use a custom Hook for repeated non-visual state or side effects."
+  - "Create a shared wrapper only with a named contract and confirmed owner."
+review_checks:
+  - id: ui-procomponent-first
+    rule: "Do not hand-roll search, pagination, form validation, or detail loading when the selected ProComponent covers it."
+  - id: ui-request-seam
+    rule: "Keep request mapping at the feature seam and pass typed data into the visual component."

@@ -1,0 +1,28 @@
+schema_version: "1"
+default_profile: react-antd-pro
+profiles:
+  react-antd-pro:
+    version: "1"
+    aliases:
+      c: component
+    generators:
+      component:
+        file-entry-table:
+          description: "File-entry list using ProTable"
+          required_components: ["ProTable"]
+          public_seam: "FileEntryTable"
+          review_checks: ["ui-procomponent-first", "ui-request-seam"]
+          files:
+            - path: "{{kebab_name}}/index.tsx"
+              template: |
+                import { ProTable } from '@ant-design/pro-components';
+
+                export function {{pascal_name}}() {
+                  return (
+                    <ProTable
+                      rowKey="id"
+                      columns={[]}
+                      request={async () => ({ data: [], success: true })}
+                    />
+                  );
+                }

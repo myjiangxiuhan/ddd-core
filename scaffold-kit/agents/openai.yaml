@@ -1,0 +1,6 @@
+interface:
+  display_name: "Scaffold Kit"
+  short_description: "Dry-run and generate one approved artifact"
+  default_prompt: "Use $scaffold-kit to inspect the configured generator, show a dry-run, and write only the approved files when I explicitly ask for apply."
+policy:
+  allow_implicit_invocation: false
