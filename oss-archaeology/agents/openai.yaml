@@ -1,0 +1,6 @@
+interface:
+  display_name: "OSS Archaeology"
+  short_description: "Study one pinned open-source project"
+  default_prompt: "Use $oss-archaeology to study this pinned open-source repository for one business rule, cite the evidence, and separate project facts from candidates for my domain."
+policy:
+  allow_implicit_invocation: false

@@ -11,6 +11,7 @@ This repository defines a deliberately user-gated DDD workflow. The entrypoint s
 - `project-wayfinder`: map a large effort as named decisions with blockers before creating slices.
 - `triage-loop`: classify raw incoming reports and produce an agent-ready brief.
 - `research-loop`: collect primary-source evidence for one unresolved question.
+- `oss-archaeology`: study one pinned open-source project and separate its facts from candidate rules for our domain.
 - `prototype-loop`: answer one design question with a throwaway experiment.
 - `to-spec`: synthesize confirmed decisions into a reviewable handoff spec.
 - `to-slices`: plan vertical slices and explicit blockers from a confirmed spec.
@@ -23,4 +24,4 @@ This repository defines a deliberately user-gated DDD workflow. The entrypoint s
 - `retro-loop`: turn session failures into approved deterministic checks or rules.
 - `rule-workbench`: maintain traceable records without changing gates implicitly.
 
-For a target project, use `.ddd/workflow-state.json` as the gate ledger. A missing or contradictory ledger blocks downstream work. Each invocation may advance at most one gate transition; ordinary discovery asks the whole independent frontier, normally 1-4 questions, while `business-lab` asks one concrete question per turn for learning. `user_decision`, `agent_recommendation`, `agent_inference`, and `pending` must stay distinct; the agent may propose options but never silently choose among material product or technology decisions. Use the exact status words in `ddd-core/rules/keywords.md`.
+For a target project, use `.ddd/workflow-state.json` as the gate ledger. A missing or contradictory ledger blocks downstream work. Each invocation may advance at most one gate transition; ordinary discovery asks the whole independent frontier, normally 1-4 questions, while `business-lab` uses one adaptive micro-question per turn. `user_decision`, `agent_recommendation`, `agent_inference`, and `pending` must stay distinct; the agent may propose options but never silently choose among material product or technology decisions. Use the exact status words in `ddd-core/rules/keywords.md`.

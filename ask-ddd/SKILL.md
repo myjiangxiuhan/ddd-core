@@ -20,6 +20,7 @@ This is a user-invoked router. Read the relevant skill descriptions before recom
 | confirmed conversation needs a handoff spec | `$to-spec` |
 | break a spec into vertical slices or tickets | `$to-slices` |
 | docs, API facts, standards, external evidence | `$research-loop` |
+| study one pinned open-source project for business rules or lifecycle experience | `$oss-archaeology` |
 | state model, behavior, UI, performance question needs a runnable answer | `$prototype-loop` |
 | stack, framework, database, cache, profile after slice approval | `$adapter-kit` |
 | component choice, page composition, library inventory, React/ProComponents evidence | `$ui-architecture` |
