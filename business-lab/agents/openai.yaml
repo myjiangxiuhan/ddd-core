@@ -1,0 +1,6 @@
+interface:
+  display_name: "Business Lab"
+  short_description: "Investigate and draw the business mainline"
+  default_prompt: "Use $business-lab to let me investigate the business, write the mainline, and draw it myself while you record, question, and check contradictions."
+policy:
+  allow_implicit_invocation: false

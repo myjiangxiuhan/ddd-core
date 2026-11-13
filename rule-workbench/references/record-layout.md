@@ -2,11 +2,13 @@
 
 Keep durable project language and decisions in one place:
 
-- `.ddd/GLOSSARY.md`: canonical terms, definitions, aliases, examples, source, and status.
+- `.ddd/GLOSSARY.md`: canonical terms, definitions, aliases, examples, source, context, and status.
+- `.ddd/GLOSSARY-MAP.md`: routing map when different business contexts own different meanings.
 - `.ddd/adr/NNNN-<decision>.md`: irreversible, cross-boundary, or surprising decisions.
 - `.ddd/workflow-state.json`: current workflow state and gates.
 - `.ddd/triage/`: raw issue reports and their triage briefs when no external tracker is configured.
 - `.ddd/slices/`: one approved vertical-slice record per file when no issue tracker is configured.
+- `.ddd/business/term-candidates.md`: user language that has been observed but not confirmed as canonical.
 
 Create files lazily. Define a term once. A glossary entry that changes meaning keeps its ID and records the change. An ADR records the decision and alternatives, not a copy of the entire design.
 

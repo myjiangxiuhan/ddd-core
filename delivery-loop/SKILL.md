@@ -9,7 +9,7 @@ description: Implement and verify one user-approved domain slice from the workfl
 
 This is a user-invoked implementation entrypoint. Run it only after the user has explicitly approved the exact `active_slice` and the workflow ledger shows the required technology profile. It owns one delivery cycle and does not plan the product.
 
-Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), [codebase design vocabulary](../ddd-core/rules/codebase-design.md), and the source design before editing. State the active slice and the user-owned decisions you are implementing before changing files.
+Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), [codebase design vocabulary](../ddd-core/rules/codebase-design.md), `.ddd/GLOSSARY.md` or `.ddd/GLOSSARY-MAP.md`, and the source design before editing. State the active slice and the user-owned decisions you are implementing before changing files.
 Before editing, run the bundled read-only gate check for `--require delivery`. A non-zero result is a hard stop; report its reason instead of repairing the ledger silently.
 
 ## Process
@@ -32,6 +32,7 @@ Return the active slice ID, user-owned decisions honored, changed files, focused
 - Do not invoke `ddd-core`, `adapter-kit`, `repair-loop`, or another skill automatically.
 - Stop before editing when the ledger is missing, the active slice is ambiguous, the profile is absent, or a pending domain decision affects the implementation.
 - Stop and return to `ddd-core` when implementation reveals a new actor, command, invariant, boundary, or future capability; do not decide it in code. A new UI component responsibility returns to `$ui-architecture` rather than being invented inline.
+- Stop and route to `$domain-modeling` when implementation or tests expose an overloaded business term; do not silently introduce a second name.
 - Do not implement deferred capabilities such as content deduplication, Redis indexing, sharing, or resumable upload unless a new slice is separately modeled and approved.
 - Do not widen the slice or treat a green test as approval for the next change.
 

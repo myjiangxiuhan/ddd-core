@@ -1,5 +1,5 @@
 ---
-rule_version: "2"
+rule_version: "3"
 id: ddd.workflow-state
 ---
 
@@ -13,7 +13,7 @@ The bundled read-only checker can be run before a gated operation:
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require delivery
 ```
 
-Use `technology`, `ui-design`, `scaffold`, `delivery`, `repair`, or `review` for the corresponding entrypoint. A non-zero exit is a hard stop.
+Use `business`, `technology`, `ui-design`, `scaffold`, `delivery`, `repair`, or `review` for the corresponding entrypoint. A non-zero exit is a hard stop.
 
 Use the exact state vocabulary in [canonical workflow keywords](keywords.md). The ledger is intentionally boring: every change should be easy to audit from the actor, transition, and evidence.
 
@@ -24,13 +24,14 @@ python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --tran
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --transition approve-slice --slice-id file-entry-crud --evidence "user approved file-entry-crud"
 ```
 
-Available transitions are `record-decision`, `confirm-design`, `approve-slice`, `select-profile`, `draft-ui`, `confirm-ui`, `start-delivery`, `verify`, `block`, `start-repair`, `pass-review`, `block-review`, and `reset-slice`. It applies only one gate transition per invocation and rejects invalid predecessors; recording several answers from one discovery frontier is still one discovery round.
+Available transitions are `start-business-lab`, `record-mainline`, `confirm-mainline`, `record-decision`, `confirm-design`, `approve-slice`, `select-profile`, `draft-ui`, `confirm-ui`, `start-delivery`, `verify`, `block`, `start-repair`, `pass-review`, `block-review`, and `reset-slice`. It applies only one gate transition per invocation and rejects invalid predecessors; recording several answers from one discovery frontier is still one discovery round.
 
 ## Minimum shape
 
 ```json
 {
   "schema_version": "1",
+  "control_mode": "human_led",
   "project": { "goal": "..." },
   "scope": {
     "current_slice_candidate": { "id": "...", "name": "..." },
@@ -44,6 +45,7 @@ Available transitions are `record-decision`, `confirm-design`, `approve-slice`, 
   ],
   "gates": {
     "phase": "discovery",
+    "business_discovery": "not_started",
     "domain_design": "draft",
     "slice_approval": "pending",
     "technology_profile": "pending",
@@ -52,13 +54,16 @@ Available transitions are `record-decision`, `confirm-design`, `approve-slice`, 
     "review": "not_started"
   },
   "technology_profile": null,
-  "active_slice": null
+  "active_slice": null,
+  "business_artifact": null
 }
 ```
 
 ## State meanings
 
-- `phase` is one of `discovery`, `domain_design`, `slice_approval`, `slice_approved`, `technology`, `ui_design`, `delivery`, `verification`, or `repair`.
+- `control_mode` is `human_led` by default. Use another mode only when the user explicitly changes the working agreement.
+- `phase` is one of `discovery`, `business_discovery`, `domain_design`, `slice_approval`, `slice_approved`, `technology`, `ui_design`, `delivery`, `verification`, or `repair`.
+- `business_discovery` is `not_started`, `in_progress`, `draft`, or `confirmed`. In `human_led` mode, the user must confirm the business mainline before the domain design can be confirmed.
 - `domain_design` is `draft` or `confirmed`.
 - `slice_approval` is `pending` or `approved`.
 - `technology_profile` is `pending` or `selected`.
@@ -66,10 +71,13 @@ Available transitions are `record-decision`, `confirm-design`, `approve-slice`, 
 - `delivery` is `not_started`, `in_progress`, `verified`, or `blocked`.
 - `review` is `not_started`, `passed`, or `blocked`. A blocked review keeps the delivery verified until a later repair explicitly starts.
 - `active_slice` is null until the user approves one named slice. Once set, its `id` and acceptance scenarios are immutable for that delivery cycle.
+- `business_artifact` points to the user-editable business mainline record; it is evidence, not an implementation plan.
 
 ## Write rules
 
 - `ddd-core` may create or update scope, decisions, domain design, and approval gates; it must not set `delivery: in_progress` or `technology_profile: selected` by inference.
+- `business-lab` may record business observations and the path to a user-authored mainline; only a separate user confirmation may set `business_discovery: confirmed`.
+- `domain-modeling` may update canonical vocabulary after the user confirms a term; it never advances a gate or substitutes for a business-mainline confirmation.
 - `adapter-kit` may set `technology_profile: selected` only after the user explicitly chooses or confirms the exact profile. It must not write implementation files.
 - `ui-architecture` may create the UI catalog and draft plan, then set `ui_design: draft`; only a separate user confirmation may set `ui_design: confirmed`.
 - `scaffold-kit` may write only the files shown in a dry-run from a configured generator after `ui_design: confirmed`; it must not change gate fields or run arbitrary commands.

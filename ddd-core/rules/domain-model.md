@@ -12,6 +12,7 @@ The domain model is the smallest design supported by the available evidence for 
 - Extract domain facts, roles, commands, rules, states, events, external actions, boundaries, and the evidence boundary.
 - Shape 2-4 acceptance scenarios during domain design.
 - Keep canonical domain terms separate from customer-facing display terms.
+- Use the confirmed term and context from `.ddd/GLOSSARY.md` or `.ddd/GLOSSARY-MAP.md`; challenge an overloaded or conflicting word before it enters a rule, scenario, interface, or test.
 - Keep the current slice separate from `deferred_capabilities`; a deferred capability may be recorded with its evidence and open questions, but it is not part of the current design or implementation.
 
 ## Minimality and boundaries

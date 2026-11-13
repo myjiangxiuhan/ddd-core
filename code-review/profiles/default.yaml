@@ -39,6 +39,18 @@ checks:
     blocking: true
     rule: "Each material behaviour has a source decision, acceptance scenario, or explicit user evidence."
     evidence: ["decision register", "acceptance scenarios", "test output"]
+  - id: ddd-business-mainline-traceability
+    axis: ddd
+    severity: major
+    blocking: true
+    rule: "For human-led projects, material behavior traces back to the confirmed business mainline and its named business change; implementation vocabulary must not replace the business evidence."
+    evidence: ["business_artifact", ".ddd/business/mainline.md", "git diff"]
+  - id: ddd-vocabulary-consistency
+    axis: ddd
+    severity: major
+    blocking: true
+    rule: "Changed behavior, tests, specs, and UI mappings use the canonical glossary term for the confirmed context; aliases and overloaded words are called out."
+    evidence: [".ddd/GLOSSARY.md", ".ddd/GLOSSARY-MAP.md", "git diff"]
   - id: ui-library-first
     axis: ui
     severity: major

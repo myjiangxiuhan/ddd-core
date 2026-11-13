@@ -1,0 +1,6 @@
+interface:
+  display_name: "Domain Modeling"
+  short_description: "Keep business language precise and shared"
+  default_prompt: "Use $domain-modeling when a business term is vague, overloaded, or conflicts with the glossary; ask one precise scenario question and record only my confirmed wording."
+policy:
+  allow_implicit_invocation: true

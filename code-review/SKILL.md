@@ -5,7 +5,7 @@ description: Review one verified DDD slice against its spec, repository standard
 
 # code-review
 
-This is a user-invoked, read-only review gate. It borrows the useful shape from Matt Pocock's review skill—pin one fixed point, compare the diff, and keep independent review axes separate—but adds the checks that make the result useful in this DDD workflow.
+This is a user-invoked, read-only review gate. It borrows the useful shape from [Matt Pocock's review skill](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)—pin one fixed point, compare the diff, and keep independent review axes separate—but adds the checks that make the result useful in this DDD workflow.
 
 ## Preconditions
 
@@ -23,15 +23,21 @@ The user must supply a fixed point such as a commit, branch, tag, merge-base, or
 
 1. **Pin the review boundary.** Run `git rev-parse <fixed-point>`, capture `git diff <fixed-point>...HEAD`, and capture `git log <fixed-point>..HEAD --oneline`. A bad ref or empty diff stops the review before any axis runs.
 2. **Resolve the evidence.** Use the active slice, confirmed decisions, acceptance scenarios, `.ddd/ui-plan.yaml` when present, and the user's supplied spec path. Then search issue references in commit messages and `docs/`, `specs/`, and `.scratch/`. If no spec is available, say `no spec available`; never invent one.
-3. **Load the standards.** Read `AGENTS.md`, `CONTRIBUTING.md`, `CODING_STANDARDS.md`, the selected technology profile, relevant `ddd-core/rules`, and local conventions nearest to changed files. A repository rule overrides a heuristic.
-4. **Load the review profile.** Use `.ddd/review-profile.yaml` when it exists; otherwise use [the bundled default](profiles/default.yaml). A project check with the same `id` overrides the bundled check; a new `id` extends it. Do not execute arbitrary shell commands from a profile. A command check is valid only when the repository explicitly documents it as an allowed verification command.
+3. **Load the standards.** Read `AGENTS.md`, `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `.ddd/GLOSSARY.md` or `.ddd/GLOSSARY-MAP.md`, the selected technology profile, relevant `ddd-core/rules`, and local conventions nearest to changed files. A repository rule overrides a heuristic.
+4. **Load the review profile.** Use `.ddd/review-profile.yaml` when it exists; otherwise use [the bundled default](profiles/default.yaml). Validate a project profile before reviewing:
+
+   ```text
+   python code-review/scripts/validate_profile.py .ddd/review-profile.yaml
+   ```
+
+   A project check with the same `id` overrides the bundled check; a new `id` extends it. Do not execute arbitrary shell commands from a profile; the validator rejects executable keys.
 5. **Run independent axes.** Keep reports separate. Parallel work is optional; independence is mandatory. Do not let a passing axis mask a failing axis.
    - **Standards:** repository rules, codebase vocabulary, public seam conventions, and Fowler smell heuristics. Smells are labelled judgement calls; documented rules are hard findings.
    - **Spec:** missing or partial requirements, unrequested behaviour, and behaviour that appears implemented incorrectly. Cite the decision or spec evidence for every finding.
    - **DDD:** active-slice boundary, confirmed invariants, actor/command ownership, domain/adapter separation, terminology, deferred-capability isolation, and evidence traceability.
    - **UI:** only when the slice has a UI plan. Check library-first component selection, component responsibility, state ownership, wrapper reasons, generated-file contract, and reuse of the project's ProComponents or equivalent primitives.
    - **Custom:** evaluate every enabled project check in the configured profile, including its path scope and evidence source.
-6. **Report findings.** Each finding must contain `id`, `axis`, `severity` (`blocker`, `major`, `minor`, or `info`), `status`, file and line when available, the governing rule or source, observed evidence, impact, a focused remediation, and confidence. Keep findings from different axes separate. A smell or recommendation is not a blocker unless the profile marks it as blocking.
+6. **Report findings.** Each finding must contain `id`, `axis`, `severity` (`blocker`, `major`, `minor`, or `info`), `status`, file and line when available, the governing rule or source, observed evidence, impact, a focused remediation, and confidence. Keep findings from different axes separate. A smell or recommendation is not a blocker unless the profile marks it as blocking. Save the complete report under `.ddd/reviews/` so the user can inspect what was checked; the report is an evidence artifact, not a source edit.
 7. **Close one review transition.** If there are no open blocking findings and the required evidence is present, apply exactly one transition:
 
    ```text
@@ -42,7 +48,7 @@ The user must supply a fixed point such as a commit, branch, tag, merge-base, or
 
 ## Output contract
 
-Return the fixed point, commit range, changed-file scope, evidence sources, profile id and version, then report these headings in order:
+Return the fixed point, commit range, changed-file scope, evidence sources, profile id and version, report path, then report these headings in order:
 
 ```text
 ## Standards

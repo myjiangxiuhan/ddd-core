@@ -11,6 +11,7 @@ from typing import Any
 
 
 REQUIRED_KEYS = {
+    "business": ("gates", "decisions"),
     "domain-design": ("gates", "decisions"),
     "slice-approval": ("gates", "active_slice"),
     "technology": ("gates", "active_slice"),
@@ -22,6 +23,9 @@ REQUIRED_KEYS = {
 }
 
 TRANSITIONS = (
+    "start-business-lab",
+    "record-mainline",
+    "confirm-mainline",
     "record-decision",
     "confirm-design",
     "approve-slice",
@@ -84,6 +88,13 @@ def check(state: dict[str, Any], target: str) -> str | None:
     current_slice = state.get("active_slice")
 
     if target == "domain-design":
+        if not isinstance(state.get("decisions"), list):
+            return "decisions must be an array"
+        if state.get("control_mode", "human_led") == "human_led" and gates.get("business_discovery", "not_started") != "confirmed":
+            return "business_discovery must be confirmed in human_led mode"
+        return None
+
+    if target == "business":
         if not isinstance(state.get("decisions"), list):
             return "decisions must be an array"
         return None
@@ -152,6 +163,7 @@ def add_history(state: dict[str, Any], transition: str, evidence: str) -> None:
     if not isinstance(history, list):
         raise ValueError("history must be an array when present")
     user_transitions = {
+        "confirm-mainline",
         "record-decision",
         "confirm-design",
         "approve-slice",
@@ -187,9 +199,28 @@ def apply_transition(state: dict[str, Any], args: argparse.Namespace) -> str:
         add_history(state, transition, evidence)
         return f"recorded decision {args.decision_id}"
 
-    if transition == "confirm-design":
+    if transition == "start-business-lab":
+        if gates.get("business_discovery", "not_started") != "not_started":
+            raise ValueError("business_discovery must be not_started before start-business-lab")
+        gates.update({"business_discovery": "in_progress", "phase": "business_discovery"})
+    elif transition == "record-mainline":
+        if gates.get("business_discovery", "not_started") != "in_progress":
+            raise ValueError("business_discovery must be in_progress before record-mainline")
+        if not (args.artifact or "").strip():
+            raise ValueError("--artifact is required for record-mainline")
+        state["business_artifact"] = args.artifact.strip()
+        gates.update({"business_discovery": "draft", "phase": "business_discovery"})
+    elif transition == "confirm-mainline":
+        if gates.get("business_discovery", "not_started") != "draft":
+            raise ValueError("business_discovery must be draft before confirm-mainline")
+        if not (state.get("business_artifact") or "").strip():
+            raise ValueError("business_artifact is required before confirm-mainline")
+        gates.update({"business_discovery": "confirmed", "phase": "domain_design"})
+    elif transition == "confirm-design":
         if gates.get("domain_design") != "draft":
             raise ValueError("domain_design must be draft before confirm-design")
+        if state.get("control_mode", "human_led") == "human_led" and gates.get("business_discovery", "not_started") != "confirmed":
+            raise ValueError("business_discovery must be confirmed in human_led mode before confirm-design")
         gates.update({"domain_design": "confirmed", "phase": "slice_approval"})
     elif transition == "approve-slice":
         if gates.get("domain_design") != "confirmed":
@@ -218,6 +249,9 @@ def apply_transition(state: dict[str, Any], args: argparse.Namespace) -> str:
             raise ValueError("ui_design must be not_started before draft-ui")
         gates.update({"ui_design": "draft", "phase": "ui_design"})
     elif transition == "confirm-ui":
+        reason = check(state, "ui-design")
+        if reason:
+            raise ValueError(reason)
         if gates.get("ui_design", "not_started") != "draft":
             raise ValueError("ui_design must be draft before confirm-ui")
         gates.update({"ui_design": "confirmed", "phase": "delivery"})
@@ -273,6 +307,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--evidence", help="user message, test result, or record supporting the transition")
     parser.add_argument("--decision-id")
     parser.add_argument("--answer")
+    parser.add_argument("--artifact")
     parser.add_argument("--slice-id")
     parser.add_argument("--slice-name")
     parser.add_argument("--profile-id")
