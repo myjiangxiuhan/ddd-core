@@ -34,7 +34,7 @@ The workflow is a state machine backed by `.ddd/workflow-state.json`. Read it be
 - Require two separate, explicit confirmations: first confirm the domain design, then approve implementation of one named slice. A single message that combines them satisfies neither transition.
 - In `human_led` mode, require a user-authored and separately confirmed business mainline before confirming the domain design. The agent may organize or challenge the mainline, but it may not author the business model for the user.
 - Ask the whole current frontier of independent questions in one round, normally 1-4 questions. If a question depends on another open question, defer it to the next round.
-- `business-lab` is more granular: ask one concrete question per turn, offer 2-4 options plus `不知道/其他`, and wait for the user's wording before creating a business card.
+- `business-lab` is adaptive: ask one micro-question per turn, start open-ended, offer 2-4 options plus `不知道/其他` only when the user is blank or asks for help, and wait for the user's wording before creating a business card.
 - Perform at most one gate transition per invocation. Recording the answers from the current frontier is part of that round; do not also confirm a design, approve a slice, or start delivery in the same invocation.
 - User-invoked entrypoints must not auto-chain another entrypoint. In particular, `ddd-core` never invokes `adapter-kit`, `delivery-loop`, or `repair-loop`; a failing delivery never silently starts a repair.
 - A draft, plan, issue, ticket, test result, or inferred agreement is not an approval. Do not promote state without the matching explicit user action.

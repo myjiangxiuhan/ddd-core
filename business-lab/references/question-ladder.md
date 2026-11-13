@@ -7,6 +7,16 @@ id: business-lab.question-ladder
 
 这套问题适合人在“想不出业务主线”时使用。它保留了八问的顺序，但把容易混在一起的概念拆开。技能一次只问一个问题；`不知道` 是合法答案。
 
+## Adaptive escalation
+
+Use the smallest intervention that keeps the user moving:
+
+1. Ask an open micro-question.
+2. If the answer is blank or vague, offer 2-4 memory-aid options.
+3. If the user still cannot choose, give one sentence frame with one blank.
+4. Stop and let the user write or draw. Never select an option on the user's behalf.
+5. After the user produces three or more cards, ask them to reorder or rewrite the mainline before another question.
+
 ## 第 0 步：先选一个真实案例
 
 不要从“整个系统是做什么的”开始。先选最近发生过的一次具体事情：

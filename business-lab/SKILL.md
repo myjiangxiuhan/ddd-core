@@ -9,7 +9,7 @@ This is a user-invoked business investigation and drawing practice. The user is 
 
 ## Working agreement
 
-Read `.ddd/working-agreement.md` when it exists; otherwise use [the human-led default](references/working-agreement.md). Use the [question ladder](references/question-ladder.md) when the user is unsure how to begin. In `human_led` mode:
+Read `.ddd/working-agreement.md` when it exists; otherwise use [the human-led default](references/working-agreement.md). Use the [question ladder](references/question-ladder.md) in `adaptive` or explicit `coached` mode. Use [the review checklist](references/review-checklist.md) after the user supplies an artifact. In `human_led` mode:
 
 - the user owns business terms, actors, authority, rules, events, and boundaries;
 - the agent may quote, organize, ask, compare, and mark uncertainty;
@@ -25,6 +25,21 @@ python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --requ
 ```
 
 If the check fails because the ledger is missing, report that exact blocker. Do not repair it by inference.
+
+## Operating modes
+
+`adaptive` is the default. Give the user one small memory prompt, wait for the user's words, and use options only if the user says `不知道`, gives a vague answer, or asks for more guidance. Accept rough notes, a hand-drawn diagram, a list of verbs, or a pasted conversation; when one appears, stop asking and switch to checklist review.
+
+Useful explicit commands are:
+
+- `只记录`: transcribe and preserve the user's words; ask nothing;
+- `检查完整性`: run the review checklist and report gaps or contradictions;
+- `引导我`: switch this round to one concrete question;
+- `自我设计`: stop asking and give me a blank canvas;
+- `检查术语`: run `$domain-modeling` against the glossary;
+- `我确认`: promote only the named user decisions or terms.
+
+In `adaptive` and `coached` modes, ask one question per turn and use the ladder below. In `self_authored` mode, the ladder is a blank-canvas reference, not an interview script.
 
 ## When the user goes blank
 
@@ -58,7 +73,7 @@ Stay inside the business language before discussing technology. For one business
 6. **Failure and waiting:** where can the flow stop, retry, compensate, or require human judgement?
 7. **Language:** which words do the people doing the work actually use, and which words are still guesses?
 
-Ask exactly one question per business-lab turn unless the user explicitly asks for a batch. Use 2-4 concrete options plus `不知道/其他`; options are memory aids, not decisions. If the user has not supplied the mainline, build it from the confirmed case one verb at a time. Do not fill the sentences in for them.
+Ask exactly one micro-question per business-lab turn in `adaptive` or explicit `coached` mode. Start open-ended. Use 2-4 concrete options plus `不知道/其他` only when the user is blank or asks for them; options are memory aids, not decisions. If the user has not supplied the mainline in `self_authored` mode, offer the sentence frame or blank canvas and wait. Do not fill the sentences in for them.
 
 ## Drawing practice
 
@@ -82,22 +97,24 @@ Maintain these user-editable artifacts under `.ddd/business/`:
 - `term-candidates.md`: words with speaker, meaning, examples, and status before they become canonical;
 - `questions.md`: unanswered questions and the person or source that can answer them.
 
-Use [the record template](references/mainline-template.md). Do not create domain entities, aggregates, database tables, APIs, UI components, or technology profiles in these records.
+Use [the record template](references/mainline-template.md). Run [the review checklist](references/review-checklist.md) only after the user asks for it. Do not create domain entities, aggregates, database tables, APIs, UI components, or technology profiles in these records.
 
 ## Gate process
 
-1. On the first round, create the working agreement and business records, ask the first case question, then apply exactly one `start-business-lab` transition.
+1. On the first round, create the working agreement and empty business records, then apply exactly one `start-business-lab` transition. In `self_authored` mode, stop and wait for the user's artifact; in `adaptive` mode, ask one micro-question and stop.
 2. When the user has written and reviewed a mainline, apply exactly one `record-mainline` transition with the artifact path and evidence.
 3. Ask for a separate confirmation or correction. Only after the user confirms the actual business mainline apply exactly one `confirm-mainline` transition.
 4. Stop. The next explicit action is `$ddd-core`, which may shape a technology-neutral slice from the confirmed business evidence. Do not call it automatically.
 
 ## Output contract
 
-Return the user's own mainline sentences, card changes, confirmed observations, unresolved questions, contradictions, diagram edits, and evidence status. Separate `user_decision`, `agent_recommendation`, `agent_inference`, and `pending`. State the current business gate and the exact next user action.
+Return the user's own mainline sentences, card changes, confirmed observations, unresolved questions, contradictions, diagram edits, checklist status, and evidence status. Separate `user_decision`, `agent_recommendation`, `agent_inference`, and `pending`. State the current business gate, the interaction mode, the number of questions asked, and the exact next user action.
 
 ## Hard stops
 
 - Do not answer the business question for the user, even when a conventional answer seems obvious.
+- In `self_authored` mode, do not start an interview. Report missing evidence and wait for the user to request guidance.
+- In `adaptive` mode, do not jump from a blank answer to a completed rule. Escalate only from prompt, to options, to an example sentence, and then back to the user for authorship.
 - Do not introduce framework, database, cache, API, screen, entity, aggregate, bounded context, or event-sourcing decisions.
 - Do not turn a boundary candidate into a design gate until the user names the business difference and confirms it.
 - Do not call `$ddd-core`, `$adapter-kit`, `$ui-architecture`, `$delivery-loop`, `$scaffold-kit`, or `$code-review` automatically.
@@ -108,6 +125,7 @@ Return the user's own mainline sentences, card changes, confirmed observations, 
 - [Human-led working agreement](references/working-agreement.md) (`business-lab.working-agreement`)
 - [Mainline record template](references/mainline-template.md) (`business-lab.mainline`)
 - [Business mainline question ladder](references/question-ladder.md) (`business-lab.question-ladder`)
+- [Business learning loop](references/learning-loop.md) (`business-lab.learning-loop`)
 - [Workflow state](../ddd-core/rules/workflow-state.md) (`ddd.workflow-state`)
 - [Interaction and gates](../ddd-core/rules/interaction.md) (`ddd.interaction`)
 - [Evidence](../ddd-core/rules/evidence.md) (`ddd.evidence`)
