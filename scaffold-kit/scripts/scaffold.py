@@ -130,14 +130,14 @@ def safe_relative(root: Path, relative: str) -> Path:
     return resolved
 
 
-def template_text(item: dict[str, Any], config_path: Path) -> str:
+def template_text(item: dict[str, Any], root: Path) -> str:
     if isinstance(item.get("template"), str):
         return item["template"]
-    template_path = (config_path.parent / item["template_file"]).resolve()
+    template_path = (root / item["template_file"]).resolve()
     try:
-        template_path.relative_to(config_path.parent.resolve())
+        template_path.relative_to(root)
     except ValueError as exc:
-        raise ConfigError(f"template_file escapes configuration directory: {item['template_file']}") from exc
+        raise ConfigError(f"template_file escapes project root: {item['template_file']}") from exc
     try:
         return template_path.read_text(encoding="utf-8")
     except OSError as exc:
@@ -175,7 +175,7 @@ def build_plan(args: argparse.Namespace, config_path: Path, profile_id: str, pro
     for item in generator["files"]:
         relative_path = render(item["path"], context)
         output = safe_relative(target, relative_path)
-        content = render(template_text(item, config_path), context)
+        content = render(template_text(item, root), context)
         exists = output.exists()
         action = "overwrite" if exists and args.force else "skip" if exists else "create"
         actions.append({
@@ -273,6 +273,8 @@ def main() -> int:
             generator = resolve_generator(profile, kind, generator_id)
             emit({"ok": True, "profile": profile_id, "profile_version": profile["version"], "generator": f"{kind}:{generator_id}", "definition": generator})
             return 0
+        if args.force and not args.apply:
+            raise ConfigError("--force requires --apply")
         plan = build_plan(args, config_path, profile_id, profile)
         if not args.apply:
             result = dict(plan)
@@ -282,8 +284,6 @@ def main() -> int:
                 action.pop("content", None)
             emit(result)
             return 0
-        if args.force and not args.apply:
-            raise ConfigError("--force requires --apply")
         emit(apply_plan(plan, Path(plan["root"]), args.force))
         return 0
     except (ConfigError, OSError) as exc:

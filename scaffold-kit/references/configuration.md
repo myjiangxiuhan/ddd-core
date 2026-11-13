@@ -5,6 +5,8 @@ id: scaffold-kit.configuration
 
 # Scaffold configuration
 
+The interaction model follows Angular CLI's schematic idea: `ng generate` exposes named, inspectable generators with options and templates, while this project keeps a separate dry-run and explicit apply step so generation cannot silently become implementation. See the [Angular CLI schematic documentation](https://angular.dev/tools/cli/schematics) for the upstream model.
+
 The project owns `.ddd/scaffold.yaml`. A profile is versioned so a generated artifact can be reviewed against the exact template contract that produced it. The generator supports inline `template` text or a repository-relative `template_file`; it performs only placeholder substitution.
 
 ```yaml
