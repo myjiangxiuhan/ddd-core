@@ -1,0 +1,23 @@
+schema_version: "1"
+id: react-antd
+version: "1"
+library: "antd"
+source_urls:
+  - "https://ant.design/components/overview/"
+  - "https://react.dev/learn/reusing-logic-with-custom-hooks"
+component_candidates:
+  list: "Table"
+  form: "Form"
+  detail: "Descriptions"
+  layout: "Layout"
+  composition: "Card"
+  loading: "Skeleton"
+selection_rules:
+  - "Prefer the existing Ant Design primitive before creating a local visual wrapper."
+  - "Keep request mapping and domain state at the feature seam."
+  - "Extract repeated non-visual state into a custom Hook only after the second concrete consumer or a confirmed public seam."
+review_checks:
+  - id: ui-antd-first
+    rule: "Do not rebuild table, form, detail, layout, or loading behavior already supplied by antd."
+  - id: ui-request-seam
+    rule: "Keep request mapping at the feature seam and pass typed data into the visual component."

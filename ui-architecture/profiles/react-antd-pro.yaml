@@ -3,7 +3,11 @@ id: react-antd-pro
 version: "1"
 library: "@ant-design/pro-components"
 source_urls:
+  - "https://react.dev/learn/reusing-logic-with-custom-hooks"
   - "https://procomponents.ant.design/"
+  - "https://procomponents.ant.design/components/table"
+  - "https://procomponents.ant.design/components/form"
+  - "https://procomponents.ant.design/components/descriptions"
 component_candidates:
   list: "ProTable"
   form: "ProForm"

@@ -9,7 +9,7 @@ This is a user-invoked planning skill. It prevents a React page from becoming a 
 
 ## Preconditions
 
-Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), the active slice, the selected technology profile, and [scaffold configuration rules](../scaffold-kit/references/configuration.md). Run:
+Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), `.ddd/GLOSSARY.md` or `.ddd/GLOSSARY-MAP.md`, the active slice, the selected technology profile, [catalog and plan schema](references/plan-schema.md), and [scaffold configuration rules](../scaffold-kit/references/configuration.md). Run:
 
 ```text
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require ui-design
@@ -61,6 +61,7 @@ Return the evidence table, the component decision tree, the proposed composition
 - Do not write JSX, CSS, tests, generator output, or package changes.
 - Do not select React, Ant Design Pro, a cache, a data-fetching library, or a folder convention from habit; use the selected profile and user decision.
 - Do not wrap a library component without a named responsibility, owner, and evidence-backed reason.
+- Do not turn a UI label or component name into a business term without checking the canonical glossary; use a display-term mapping when the labels differ.
 - Do not turn a future UI capability into the current slice. Record it as `deferred` and preserve only technology-neutral compatibility constraints.
 - Do not call `$adapter-kit`, `$delivery-loop`, `$scaffold-kit`, or `$code-review` automatically.
 
@@ -71,3 +72,4 @@ Return the evidence table, the component decision tree, the proposed composition
 - [Scope and future-capability rules](../ddd-core/rules/scope.md) (`ddd.scope`)
 - [Codebase design vocabulary](../ddd-core/rules/codebase-design.md) (`ddd.codebase-design`)
 - [Scaffold configuration](../scaffold-kit/references/configuration.md) (`scaffold-kit.configuration`)
+- [Catalog and plan records](references/plan-schema.md) (`ui-architecture.plan`)
