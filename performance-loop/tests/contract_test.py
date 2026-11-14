@@ -162,6 +162,15 @@ class PerformanceContractTest(unittest.TestCase):
             with self.assertRaisesRegex(ContractError, "database_mapping.evidence"):
                 validate(path)
 
+    def test_contract_rejects_non_finite_budgets(self) -> None:
+        value = contract()
+        value["workload"]["scenarios"][0]["budget"]["p95_ms"] = float("nan")  # type: ignore[index]
+        with workspace_temp() as root:
+            path = root / "contract.yaml"
+            path.write_text(yaml.safe_dump(value, sort_keys=False), encoding="utf-8")
+            with self.assertRaisesRegex(ContractError, "p95_ms"):
+                validate(path)
+
     def test_baseline_passes_and_fails_against_fixed_budget(self) -> None:
         with workspace_temp() as root:
             contract_path = root / "contract.yaml"
@@ -196,6 +205,16 @@ class PerformanceContractTest(unittest.TestCase):
             baseline["scenarios"]["list-root-entries"]["p95_ms"] = 201
             baseline_path.write_text(json.dumps(baseline), encoding="utf-8")
             self.assertEqual(compare(contract_path, baseline_path)["status"], "failed")
+            baseline["scenarios"]["list-root-entries"]["p95_ms"] = float("nan")
+            baseline_path.write_text(json.dumps(baseline), encoding="utf-8")
+            non_finite = compare(contract_path, baseline_path)
+            self.assertEqual(non_finite["status"], "failed")
+            self.assertEqual(non_finite["failures"][0]["metric"], "p95_ms")
+            baseline["scenarios"]["list-root-entries"]["p95_ms"] = -1
+            baseline_path.write_text(json.dumps(baseline), encoding="utf-8")
+            negative = compare(contract_path, baseline_path)
+            self.assertEqual(negative["status"], "failed")
+            self.assertEqual(negative["failures"][0]["metric"], "p95_ms")
 
     def test_baseline_metadata_must_match_contract(self) -> None:
         with workspace_temp() as root:

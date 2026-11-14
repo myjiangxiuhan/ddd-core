@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -41,13 +42,13 @@ def non_empty_string(value: Any, label: str) -> str:
 
 
 def positive_number(value: Any, label: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) or value <= 0:
         raise ContractError(f"{label} must be positive")
     return float(value)
 
 
 def non_negative_number(value: Any, label: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) or value < 0:
         raise ContractError(f"{label} must be zero or positive")
     return float(value)
 
@@ -63,8 +64,14 @@ def string_list(value: Any, label: str, *, allow_empty: bool = True) -> list[str
     return result
 
 
-def validate(path: Path, *, profiles_dir: Path = PROFILE_DIR) -> dict[str, Any]:
-    value = load_yaml(path)
+def validate(
+    path: Path,
+    *,
+    profiles_dir: Path = PROFILE_DIR,
+    profile_override: dict[str, Any] | None = None,
+    document: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    value = document if document is not None else load_yaml(path)
     if value.get("schema_version") != "1":
         raise ContractError('schema_version must be "1"')
     contract_id = non_empty_string(value.get("id"), "id")
@@ -115,7 +122,17 @@ def validate(path: Path, *, profiles_dir: Path = PROFILE_DIR) -> dict[str, Any]:
     database_profile: dict[str, Any] | None = None
     if database.get("engine") not in {"none", "in-memory"}:
         try:
-            database_profile = load_profile_from_contract(database, profiles_dir)
+            if profile_override is not None:
+                adapter_profile = non_empty_string(database.get("adapter_profile"), "profile.database.adapter_profile")
+                if profile_override.get("id") != adapter_profile:
+                    raise ProfileError("database profile id does not match the contract")
+                if profile_override.get("engine") != database.get("engine"):
+                    raise ProfileError("database profile engine does not match the contract")
+                if str(profile_override.get("version")) != str(database.get("version")):
+                    raise ProfileError("database profile version does not match the contract")
+                database_profile = profile_override
+            else:
+                database_profile = load_profile_from_contract(database, profiles_dir)
         except ProfileError as exc:
             raise ContractError(str(exc)) from exc
 
@@ -259,6 +276,8 @@ def validate(path: Path, *, profiles_dir: Path = PROFILE_DIR) -> dict[str, Any]:
             raise ContractError("baseline.status is invalid")
         if baseline.get("result") is not None:
             non_empty_string(baseline.get("result"), "baseline.result")
+            if Path(str(baseline["result"])).is_absolute():
+                raise ContractError("baseline.result must be project-relative")
     return {
         "ok": True,
         "id": contract_id,

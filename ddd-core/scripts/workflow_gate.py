@@ -16,6 +16,8 @@ from approval import (
     digest_file,
     digest_json,
     domain_design_digest,
+    load_receipts,
+    trusted_context,
     verify_credential,
 )
 
@@ -27,6 +29,7 @@ REQUIRED_KEYS = {
     "technology": ("gates", "active_slice"),
     "database-profile": ("gates", "active_slice", "technology_profile"),
     "performance": ("gates", "active_slice", "technology_profile"),
+    "baseline": ("gates", "active_slice", "technology_profile"),
     "ui-system": ("gates",),
     "ui-practices": ("gates",),
     "ui-design": ("gates", "active_slice"),
@@ -46,6 +49,7 @@ TRANSITIONS = (
     "select-profile",
     "select-database-profile",
     "confirm-performance",
+    "confirm-baseline",
     "draft-ui-system",
     "confirm-ui-system",
     "draft-ui-practices",
@@ -69,6 +73,7 @@ USER_TRANSITIONS = {
     "select-profile",
     "select-database-profile",
     "confirm-performance",
+    "confirm-baseline",
     "confirm-ui-system",
     "confirm-ui-practices",
     "confirm-ui",
@@ -135,21 +140,23 @@ def project_yaml(root: Path, relative: str, label: str) -> dict[str, Any]:
     return value
 
 
-def performance_profile_loader() -> Any:
-    scripts = Path(__file__).resolve().parents[2] / "performance-loop" / "scripts"
-    if str(scripts) not in sys.path:
-        sys.path.insert(0, str(scripts))
-    from profile_loader import load_profile  # type: ignore
-
-    return load_profile
-
-
 def database_profile_from_file(root: Path, relative: str, expected_id: str, expected_version: str) -> dict[str, Any]:
     path = project_path(root, relative, "database profile")
-    if not path.is_file():
-        raise ValueError(f"database profile not found: {relative}")
     try:
-        profile = performance_profile_loader()(path)
+        raw = path.read_bytes()
+        current_digest = digest_bytes(raw)
+        import yaml  # type: ignore
+        scripts = Path(__file__).resolve().parents[2] / "performance-loop" / "scripts"
+        if str(scripts) not in sys.path:
+            sys.path.insert(0, str(scripts))
+        from profile_loader import validate_profile  # type: ignore
+
+        profile_value = yaml.safe_load(raw.decode("utf-8-sig"))
+        if not isinstance(profile_value, dict):
+            raise ValueError("database profile root must be an object")
+        profile = validate_profile(profile_value)
+    except FileNotFoundError as exc:
+        raise ValueError(f"database profile not found: {relative}") from exc
     except Exception as exc:  # profile_loader exposes a stable validation error, but preserve a gate-level message.
         raise ValueError(f"database profile is invalid: {exc}") from exc
     if profile.get("id") != expected_id:
@@ -161,7 +168,7 @@ def database_profile_from_file(root: Path, relative: str, expected_id: str, expe
         "version": str(profile["version"]),
         "profile_version": str(profile.get("profile_version", "")),
         "path": Path(relative).as_posix(),
-        "digest": digest_file(path),
+        "digest": current_digest,
     }
 
 
@@ -181,20 +188,33 @@ def performance_record_path(state: dict[str, Any]) -> str | None:
     return value.strip() if isinstance(value, str) and value.strip() else None
 
 
-def performance_contract_from_file(root: Path, relative: str, state: dict[str, Any]) -> dict[str, Any]:
+def _performance_contract_snapshot(
+    root: Path,
+    relative: str,
+    state: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
     path = project_path(root, relative, "performance contract")
     if not path.is_file():
         raise ValueError(f"performance contract not found: {relative}")
+    try:
+        raw = path.read_bytes()
+        current_digest = digest_bytes(raw)
+    except OSError as exc:
+        raise ValueError(f"cannot read performance contract: {relative}") from exc
     try:
         scripts = Path(__file__).resolve().parents[2] / "performance-loop" / "scripts"
         if str(scripts) not in sys.path:
             sys.path.insert(0, str(scripts))
         from validate_contract import validate  # type: ignore
+        import yaml  # type: ignore
         profile_record = state.get("database_profile")
         if not isinstance(profile_record, dict):
             raise ValueError("database_profile must be selected before confirming performance")
         profile_path = project_path(root, str(profile_record.get("path")), "database profile")
-        result = validate(path, profiles_dir=profile_path.parent)
+        contract = yaml.safe_load(raw.decode("utf-8-sig"))
+        if not isinstance(contract, dict):
+            raise ValueError("performance contract root must be an object")
+        result = validate(path, profiles_dir=profile_path.parent, document=contract)
     except ValueError:
         raise
     except Exception as exc:
@@ -204,18 +224,153 @@ def performance_contract_from_file(root: Path, relative: str, state: dict[str, A
     current_slice = active_slice(state)
     if result.get("slice_id") != current_slice.get("id"):
         raise ValueError("performance contract slice_id does not match active_slice")
-    contract = project_yaml(root, relative, "performance contract")
     database = contract.get("profile", {}).get("database", {}) if isinstance(contract.get("profile"), dict) else {}
     profile_record = state.get("database_profile")
     if not isinstance(profile_record, dict) or database.get("adapter_profile") != profile_record.get("id"):
         raise ValueError("performance contract database profile does not match the selected database profile")
     if str(database.get("version")) != str(profile_record.get("version")):
         raise ValueError("performance contract database version does not match the selected database profile")
-    return {
+    existing_record = state.get("performance_contract")
+    if isinstance(existing_record, dict) and existing_record.get("digest") != current_digest:
+        raise ValueError("performance contract digest does not match the signed workflow record")
+    result_record = {
         "path": Path(relative).as_posix(),
-        "digest": digest_file(path),
+        "digest": current_digest,
         "slice_id": result["slice_id"],
         "database_profile": profile_record["id"],
+    }
+    baseline_spec = contract.get("baseline")
+    if isinstance(baseline_spec, dict) and isinstance(baseline_spec.get("result"), str):
+        result_record["baseline_result"] = Path(baseline_spec["result"]).as_posix()
+    return result_record, contract
+
+
+def performance_contract_from_file(root: Path, relative: str, state: dict[str, Any]) -> dict[str, Any]:
+    return _performance_contract_snapshot(root, relative, state)[0]
+
+
+def baseline_attestation_from_file(root: Path, relative: str, state: dict[str, Any]) -> dict[str, Any]:
+    """Read the exact baseline bytes and derive the approval binding record."""
+    path = project_path(root, relative, "baseline result")
+    try:
+        raw = path.read_bytes()
+        value = json.loads(raw.decode("utf-8-sig"))
+    except FileNotFoundError as exc:
+        raise ValueError(f"baseline result not found: {relative}") from exc
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"baseline result is not valid JSON: {relative}") from exc
+    if not isinstance(value, dict) or value.get("schema_version") != "1":
+        raise ValueError("baseline result must use schema_version 1")
+
+    active = active_slice(state)
+    if value.get("slice_id") != active.get("id"):
+        raise ValueError("baseline slice_id does not match active_slice")
+    commit = value.get("commit")
+    dataset_digest = value.get("dataset_digest")
+    if not isinstance(commit, str) or not commit.strip():
+        raise ValueError("baseline.commit must be a non-empty string")
+    if not isinstance(dataset_digest, str) or not dataset_digest.strip():
+        raise ValueError("baseline.dataset_digest must be a non-empty string")
+    if not isinstance(value.get("environment"), dict) or not value["environment"]:
+        raise ValueError("baseline.environment must be a non-empty object")
+
+    database_record = state.get("database_profile")
+    if not isinstance(database_record, dict):
+        raise ValueError("database_profile must be selected before baseline attestation")
+    current_profile = database_profile_from_file(
+        root,
+        str(database_record.get("path")),
+        str(database_record.get("id")),
+        str(database_record.get("version")),
+    )
+    if current_profile.get("digest") != database_record.get("digest"):
+        raise ValueError("database profile digest does not match the signed workflow record")
+    if value.get("database_profile") != database_record.get("id"):
+        raise ValueError("baseline database_profile does not match the selected database profile")
+
+    performance_record = state.get("performance_contract")
+    if not isinstance(performance_record, dict):
+        raise ValueError("performance_contract must be confirmed before baseline attestation")
+    contract_record, contract = _performance_contract_snapshot(root, str(performance_record.get("path")), state)
+    if contract_record.get("digest") != performance_record.get("digest"):
+        raise ValueError("performance contract digest does not match the signed workflow record")
+    if value.get("contract_id") != contract.get("id"):
+        raise ValueError("baseline contract_id does not match the performance contract")
+    contract_profile = contract.get("profile")
+    if not isinstance(contract_profile, dict):
+        raise ValueError("performance contract profile is missing")
+    contract_database = contract_profile.get("database")
+    if not isinstance(contract_database, dict):
+        raise ValueError("performance contract database profile is missing")
+    expected_database = f"{contract_database.get('engine')}:{contract_database.get('version')}"
+    if value["environment"].get("database") != expected_database:
+        raise ValueError("baseline.environment.database does not match the performance contract database")
+    baseline_profile = value.get("profile")
+    if (
+        not isinstance(baseline_profile, dict)
+        or baseline_profile.get("id") != contract_profile.get("id")
+        or str(baseline_profile.get("version")) != str(contract_profile.get("version"))
+    ):
+        raise ValueError("baseline profile does not match the performance contract")
+    if contract_database.get("adapter_profile") != database_record.get("id"):
+        raise ValueError("performance contract database profile does not match the selected database profile")
+    baseline_spec = contract.get("baseline")
+    if not isinstance(baseline_spec, dict) or not isinstance(baseline_spec.get("result"), str):
+        raise ValueError("performance contract must bind a baseline.result path")
+    if project_path(root, baseline_spec["result"], "baseline result") != path:
+        raise ValueError("baseline path does not match the performance contract")
+    workload = contract.get("workload")
+    dataset = workload.get("dataset") if isinstance(workload, dict) else None
+    if not isinstance(dataset, dict) or value.get("dataset_rows") != dataset.get("rows"):
+        raise ValueError("baseline.dataset_rows does not match the performance contract")
+
+    return {
+        "path": Path(relative).as_posix(),
+        "digest": digest_bytes(raw),
+        "contract_path": performance_record["path"],
+        "contract_digest": performance_record["digest"],
+        "database_profile": database_record["id"],
+        "database_profile_version": str(database_record.get("version")),
+        "database_profile_path": database_record["path"],
+        "database_profile_digest": database_record["digest"],
+        "dataset_digest": dataset_digest,
+        "dataset_rows": value["dataset_rows"],
+        "commit": commit,
+        "slice_id": active["id"],
+    }
+
+
+def baseline_binding_from_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Extract the exact baseline binding covered by a signed approval."""
+    required = (
+        "baseline_record",
+        "baseline_digest",
+        "performance_record",
+        "performance_contract_digest",
+        "database_profile_id",
+        "database_profile_version",
+        "database_profile_path",
+        "database_profile_digest",
+        "dataset_digest",
+        "dataset_rows",
+        "commit",
+        "slice_id",
+    )
+    if any(key not in arguments for key in required):
+        raise ValueError("confirm-baseline approval arguments are incomplete")
+    return {
+        "path": arguments["baseline_record"],
+        "digest": arguments["baseline_digest"],
+        "contract_path": arguments["performance_record"],
+        "contract_digest": arguments["performance_contract_digest"],
+        "database_profile": arguments["database_profile_id"],
+        "database_profile_version": arguments["database_profile_version"],
+        "database_profile_path": arguments["database_profile_path"],
+        "database_profile_digest": arguments["database_profile_digest"],
+        "dataset_digest": arguments["dataset_digest"],
+        "dataset_rows": arguments["dataset_rows"],
+        "commit": arguments["commit"],
+        "slice_id": arguments["slice_id"],
     }
 
 
@@ -227,7 +382,11 @@ def database_workflow_required(state: dict[str, Any]) -> bool:
         and active.get("requires_database") is True
     ) or (
         isinstance(gates, dict)
-        and ("database_profile" in gates or "performance_contract" in gates)
+        and (
+            gates.get("database_profile") == "selected"
+            or gates.get("performance_contract") == "confirmed"
+            or gates.get("baseline_attestation") == "confirmed"
+        )
     )
 
 
@@ -327,7 +486,42 @@ def check(state: dict[str, Any], target: str, root: Path | None = None) -> str |
             return "performance_contract must be confirmed before performance verification"
         if root is not None:
             try:
+                database_record = state.get("database_profile")
+                if not isinstance(database_record, dict):
+                    return "database_profile record is missing"
+                current_profile = database_profile_from_file(
+                    root,
+                    str(database_record.get("path")),
+                    str(database_record.get("id")),
+                    str(database_record.get("version")),
+                )
+                if current_profile.get("digest") != database_record.get("digest"):
+                    return "database profile digest does not match the signed workflow record"
                 performance_contract_from_file(root, str(performance_record_path(state)), state)
+            except ValueError as exc:
+                return str(exc)
+        return None
+    if target == "baseline":
+        if root is None:
+            return "baseline checks require a project root"
+        if gates.get("technology_profile") != "selected":
+            return "technology_profile must be selected before baseline attestation"
+        if gates.get("database_profile") != "selected":
+            return "database_profile must be selected before baseline attestation"
+        if gates.get("performance_contract") != "confirmed":
+            return "performance_contract must be confirmed before baseline attestation"
+        if gates.get("baseline_attestation", "pending") == "confirmed":
+            return "baseline_attestation is already confirmed"
+        if root is not None:
+            try:
+                performance_record = state.get("performance_contract")
+                if not isinstance(performance_record, dict):
+                    return "performance_contract record is missing"
+                contract = project_yaml(root, str(performance_record.get("path")), "performance contract")
+                baseline = contract.get("baseline") if isinstance(contract, dict) else None
+                if not isinstance(baseline, dict) or not isinstance(baseline.get("result"), str):
+                    return "performance contract must bind a baseline.result path"
+                baseline_attestation_from_file(root, baseline["result"], state)
             except ValueError as exc:
                 return str(exc)
         return None
@@ -370,17 +564,37 @@ def check(state: dict[str, Any], target: str, root: Path | None = None) -> str |
     if target == "delivery" and gates.get("technology_profile") != "selected":
         return "technology_profile must be selected"
     if target == "delivery" and database_workflow_required(state):
+        if root is None:
+            return "database delivery checks require a project root"
         if gates.get("database_profile") != "selected":
             return "database_profile must be selected before delivery"
         if gates.get("performance_contract") != "confirmed":
             return "performance_contract must be confirmed before delivery"
+        if gates.get("baseline_attestation") != "confirmed":
+            return "baseline_attestation must be confirmed before delivery"
         if root is not None:
             try:
                 database_record = state.get("database_profile")
                 if not isinstance(database_record, dict):
                     return "database_profile record is missing"
-                database_profile_from_file(root, str(database_record.get("path")), str(database_record.get("id")), str(database_record.get("version")))
-                performance_contract_from_file(root, str(performance_record_path(state)), state)
+                current_profile = database_profile_from_file(
+                    root,
+                    str(database_record.get("path")),
+                    str(database_record.get("id")),
+                    str(database_record.get("version")),
+                )
+                if current_profile.get("digest") != database_record.get("digest"):
+                    return "database profile digest does not match the signed workflow record"
+                current_contract = performance_contract_from_file(root, str(performance_record_path(state)), state)
+                performance_record = state.get("performance_contract")
+                if not isinstance(performance_record, dict) or current_contract.get("digest") != performance_record.get("digest"):
+                    return "performance contract digest does not match the signed workflow record"
+                baseline_record = state.get("baseline_attestation")
+                if not isinstance(baseline_record, dict):
+                    return "baseline_attestation record is missing"
+                current_baseline = baseline_attestation_from_file(root, str(baseline_record.get("path")), state)
+                if current_baseline != baseline_record:
+                    return "baseline attestation digest does not match the signed workflow record"
             except ValueError as exc:
                 return str(exc)
     if target == "delivery" and gates.get("ui_design", "not_started") == "draft":
@@ -407,10 +621,14 @@ def check(state: dict[str, Any], target: str, root: Path | None = None) -> str |
         if gates.get("delivery") != "verified":
             return "delivery must be verified before review"
         if database_workflow_required(state):
+            if root is None:
+                return "database review checks require a project root"
             if gates.get("database_profile") != "selected":
                 return "database_profile must be selected before review"
             if gates.get("performance_contract") != "confirmed":
                 return "performance_contract must be confirmed before review"
+            if gates.get("baseline_attestation") != "confirmed":
+                return "baseline_attestation must be confirmed before review"
         if gates.get("review", "not_started") not in {"not_started", "blocked"}:
             return "review must be not_started or blocked"
     return None
@@ -440,7 +658,11 @@ def state_digest(state: dict[str, Any]) -> str:
     return digest_bytes(serialized_state(state))
 
 
-def approval_arguments(state: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+def approval_arguments(
+    state: dict[str, Any],
+    args: argparse.Namespace,
+    state_path: Path | None = None,
+) -> dict[str, Any]:
     """Return the canonical, user-visible arguments covered by a signature."""
     transition = args.transition
     result: dict[str, Any] = {
@@ -501,6 +723,34 @@ def approval_arguments(state: dict[str, Any], args: argparse.Namespace) -> dict[
             "performance_record": record_path,
             "database_profile_id": (state.get("database_profile") or {}).get("id", ""),
         })
+    elif transition == "confirm-baseline":
+        if state_path is None:
+            raise ValueError("confirm-baseline approval arguments require a workflow ledger path")
+        contract_record = state.get("performance_contract")
+        if not isinstance(contract_record, dict):
+            raise ValueError("performance_contract must be confirmed before baseline attestation")
+        baseline_path = (getattr(args, "baseline_record", None) or "").strip()
+        if not baseline_path:
+            root = project_root_from_state(state_path)
+            contract = project_yaml(root, str(contract_record.get("path")), "performance contract")
+            baseline_spec = contract.get("baseline") if isinstance(contract, dict) else None
+            baseline_path = baseline_spec.get("result", "") if isinstance(baseline_spec, dict) else ""
+        root = project_root_from_state(state_path)
+        binding = baseline_attestation_from_file(root, baseline_path, state)
+        result.update({
+            "baseline_record": baseline_path,
+            "baseline_digest": binding["digest"],
+            "performance_record": binding["contract_path"],
+            "performance_contract_digest": binding["contract_digest"],
+            "database_profile_id": binding["database_profile"],
+            "database_profile_version": binding["database_profile_version"],
+            "database_profile_path": binding["database_profile_path"],
+            "database_profile_digest": binding["database_profile_digest"],
+            "dataset_digest": binding["dataset_digest"],
+            "dataset_rows": binding["dataset_rows"],
+            "commit": binding["commit"],
+            "slice_id": binding["slice_id"],
+        })
     return result
 
 
@@ -532,6 +782,21 @@ def approval_records_for_transition(
                 default_path = f".ddd/performance/{current['id']}.yaml"
         path = (args.performance_record if args is not None else None) or default_path or performance_record_path(state)
         return [path] if isinstance(path, str) and path.strip() else []
+    if transition == "confirm-baseline":
+        baseline_path = (getattr(args, "baseline_record", None) if args is not None else None)
+        if not baseline_path:
+            record = state.get("performance_contract")
+            baseline_path = record.get("baseline_result") if isinstance(record, dict) else None
+        result = []
+        if isinstance(baseline_path, str) and baseline_path.strip():
+            result.append(baseline_path)
+        performance_path = performance_record_path(state)
+        profile_path = database_profile_path(state)
+        if performance_path:
+            result.append(performance_path)
+        if profile_path:
+            result.append(profile_path)
+        return result
     return []
 
 
@@ -546,6 +811,39 @@ def consumed_request_ids(state: dict[str, Any]) -> set[str]:
         approval = item.get("approval")
         if isinstance(approval, dict) and isinstance(approval.get("request_id"), str):
             result.add(approval["request_id"])
+    return result
+
+
+def workflow_receipt_request_ids(root: Path, state: dict[str, Any], trusted_public_key: str) -> list[str]:
+    """Return consumed workflow-approval request IDs in immutable receipt order."""
+    try:
+        _, _, receipt_path, anchor_path, _ = trusted_context(trusted_public_key, root)
+        receipts = load_receipts(receipt_path, anchor_path)
+    except ApprovalError as exc:
+        raise ValueError(f"cannot validate the immutable approval receipt chain: {exc}") from exc
+    result: list[str] = []
+    for entry in receipts.get("receipts", []):
+        if not isinstance(entry, dict):
+            continue
+        request_id = entry.get("request_id")
+        if not isinstance(request_id, str) or not request_id.strip():
+            raise ValueError("approval receipt has an invalid request_id")
+        request_path = project_path(root, f".ddd/approvals/requests/{request_id}.json", "approval request")
+        try:
+            request = json.loads(request_path.read_text(encoding="utf-8-sig"))
+        except (FileNotFoundError, OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"consumed approval request is missing or invalid: {request_id}") from exc
+        payload = request.get("payload") if isinstance(request, dict) else None
+        action = payload.get("action") if isinstance(payload, dict) else None
+        if not isinstance(payload, dict) or entry.get("payload_digest") != digest_json(payload):
+            raise ValueError(f"consumed approval receipt does not match its request payload: {request_id}")
+        recorded_action = entry.get("action")
+        if recorded_action is not None and recorded_action != action:
+            raise ValueError(f"consumed approval receipt action does not match its request payload: {request_id}")
+        if isinstance(action, str) and action.startswith("workflow:"):
+            if entry.get("project_id") != digest_json(state.get("project", {})):
+                raise ValueError(f"workflow approval receipt belongs to a different project: {request_id}")
+            result.append(request_id)
     return result
 
 
@@ -572,6 +870,8 @@ def required_user_transitions(state: dict[str, Any]) -> set[str]:
         required.add("select-database-profile")
     if gates.get("performance_contract") == "confirmed":
         required.add("confirm-performance")
+    if gates.get("baseline_attestation") == "confirmed":
+        required.add("confirm-baseline")
     if gates.get("ui_system") == "confirmed":
         required.add("confirm-ui-system")
     if gates.get("ui_practices") == "confirmed":
@@ -615,7 +915,7 @@ def verify_transition_approval(
             candidate,
             args.trusted_public_key,
             expected_action=f"workflow:{args.transition}",
-            expected_arguments=approval_arguments(state, args),
+            expected_arguments=approval_arguments(state, args, state_path),
             expected_records=approval_records_for_transition(state, args.transition, args),
             used_request_ids=consumed_request_ids(state),
         )
@@ -640,6 +940,8 @@ def validate_history_approvals(
             "pass --trusted-public-key and provision the fixed user trust manifest (approval.py trust-path)"
         )
     seen: set[str] = set()
+    history_request_ids: list[str] = []
+    history_user_transitions: list[tuple[str, str]] = []
     observed: set[str] = set()
     recorded_decisions: set[str] = set()
     root = project_root_from_state(state_path)
@@ -664,6 +966,8 @@ def validate_history_approvals(
         if request_id in seen:
             raise ValueError(f"approval request was replayed in history: {request_id}")
         seen.add(request_id)
+        history_request_ids.append(request_id)
+        history_user_transitions.append((transition, request_id))
         if not isinstance(credential_ref, str) or not credential_ref.strip():
             raise ValueError(f"user history entry {transition} lacks a credential path")
         credential_path = project_path(root, credential_ref, "approval credential")
@@ -676,6 +980,7 @@ def validate_history_approvals(
                 expected_records=approval_records_for_transition(state, transition),
                 check_state=False,
                 allow_consumed=True,
+                require_consumed=transition in {"select-database-profile", "confirm-performance", "confirm-baseline"},
             )
         except ApprovalError as exc:
             raise ValueError(f"user history approval for {transition} is invalid: {exc}") from exc
@@ -746,13 +1051,43 @@ def validate_history_approvals(
                 raise ValueError("signed select-database-profile no longer matches database_profile")
         elif transition == "confirm-performance":
             performance_record = state.get("performance_contract")
+            try:
+                current_contract = performance_contract_from_file(
+                    root,
+                    str(performance_record.get("path")) if isinstance(performance_record, dict) else "",
+                    state,
+                )
+            except ValueError as exc:
+                raise ValueError(f"signed confirm-performance no longer matches performance_contract: {exc}") from exc
             if (
                 not isinstance(performance_record, dict)
+                or performance_record != current_contract
                 or performance_record.get("path") != arguments.get("performance_record")
                 or performance_record.get("database_profile") != arguments.get("database_profile_id")
-                or performance_record.get("digest") != digest_file(project_path(root, str(performance_record.get("path")), "performance contract"))
             ):
                 raise ValueError("signed confirm-performance no longer matches performance_contract")
+        elif transition == "confirm-baseline":
+            try:
+                expected_baseline = baseline_attestation_from_file(root, str(arguments.get("baseline_record")), state)
+            except ValueError as exc:
+                raise ValueError(f"signed confirm-baseline no longer matches baseline_attestation: {exc}") from exc
+            baseline_record = state.get("baseline_attestation")
+            if (
+                not isinstance(baseline_record, dict)
+                or baseline_record != expected_baseline
+                or arguments.get("baseline_digest") != expected_baseline["digest"]
+                or arguments.get("performance_record") != expected_baseline["contract_path"]
+                or arguments.get("performance_contract_digest") != expected_baseline["contract_digest"]
+                or arguments.get("database_profile_id") != expected_baseline["database_profile"]
+                or arguments.get("database_profile_version") != expected_baseline["database_profile_version"]
+                or arguments.get("database_profile_path") != expected_baseline["database_profile_path"]
+                or arguments.get("database_profile_digest") != expected_baseline["database_profile_digest"]
+                or arguments.get("dataset_digest") != expected_baseline["dataset_digest"]
+                or arguments.get("dataset_rows") != expected_baseline["dataset_rows"]
+                or arguments.get("commit") != expected_baseline["commit"]
+                or arguments.get("slice_id") != expected_baseline["slice_id"]
+            ):
+                raise ValueError("signed confirm-baseline no longer matches baseline_attestation")
     missing = sorted(required - observed)
     if missing:
         raise ValueError(f"workflow ledger lacks user confirmations: {', '.join(missing)}")
@@ -769,6 +1104,43 @@ def validate_history_approvals(
     missing_decisions = sorted(required_decisions - recorded_decisions)
     if missing_decisions:
         raise ValueError(f"answered decisions lack signed record-decision approvals: {', '.join(missing_decisions)}")
+    gates = state.get("gates")
+    if isinstance(gates, dict) and (gates.get("database_profile") == "selected" or gates.get("performance_contract") == "confirmed"):
+        receipt_request_ids = workflow_receipt_request_ids(root, state, trusted_public_key or "")
+        if history_request_ids != receipt_request_ids:
+            missing = [request_id for request_id in receipt_request_ids if request_id not in history_request_ids]
+            extra = [request_id for request_id in history_request_ids if request_id not in receipt_request_ids]
+            raise ValueError(
+                "database workflow user history does not match the immutable receipt order"
+                + (f"; missing receipts: {', '.join(missing)}" if missing else "")
+                + (f"; unconsumed history approvals: {', '.join(extra)}" if extra else "")
+            )
+        reset_positions = [index for index, (transition, _) in enumerate(history_user_transitions) if transition == "reset-slice"]
+        latest_reset = max(reset_positions, default=-1)
+        latest_approve = max(
+            (index for index, (transition, _) in enumerate(history_user_transitions) if transition == "approve-slice"),
+            default=-1,
+        )
+        latest_database = max(
+            (index for index, (transition, _) in enumerate(history_user_transitions) if transition == "select-database-profile"),
+            default=-1,
+        )
+        latest_performance = max(
+            (index for index, (transition, _) in enumerate(history_user_transitions) if transition == "confirm-performance"),
+            default=-1,
+        )
+        latest_baseline = max(
+            (index for index, (transition, _) in enumerate(history_user_transitions) if transition == "confirm-baseline"),
+            default=-1,
+        )
+        if latest_reset > latest_approve:
+            raise ValueError("database workflow approvals were invalidated by reset-slice; approve a new slice before reuse")
+        if gates.get("database_profile") == "selected" and latest_database <= latest_reset:
+            raise ValueError("database profile approval belongs to a slice before reset-slice")
+        if gates.get("performance_contract") == "confirmed" and latest_performance <= latest_reset:
+            raise ValueError("performance approval belongs to a slice before reset-slice")
+        if gates.get("baseline_attestation") == "confirmed" and latest_baseline <= latest_reset:
+            raise ValueError("baseline attestation belongs to a slice before reset-slice")
 
 
 def add_history(
@@ -897,7 +1269,7 @@ def apply_transition(state: dict[str, Any], args: argparse.Namespace, state_path
         relative = (args.database_profile_path or f".ddd/performance-profiles/{args.database_profile_id.strip()}.yaml").strip()
         record = database_profile_from_file(root, relative, args.database_profile_id.strip(), args.database_profile_version.strip())
         state["database_profile"] = record
-        gates.update({"database_profile": "selected", "performance_contract": "pending", "phase": "performance"})
+        gates.update({"database_profile": "selected", "performance_contract": "pending", "baseline_attestation": "pending", "phase": "performance"})
     elif transition == "confirm-performance":
         if gates.get("database_profile") != "selected":
             raise ValueError("database_profile must be selected before confirm-performance")
@@ -909,7 +1281,31 @@ def apply_transition(state: dict[str, Any], args: argparse.Namespace, state_path
         relative = (args.performance_record or f".ddd/performance/{active_slice(state)['id']}.yaml").strip()
         record = performance_contract_from_file(root, relative, state)
         state["performance_contract"] = record
-        gates.update({"performance_contract": "confirmed", "phase": "delivery"})
+        gates.update({"performance_contract": "confirmed", "baseline_attestation": "pending", "phase": "performance"})
+    elif transition == "confirm-baseline":
+        reason = check(state, "baseline", project_root_from_state(state_path) if state_path is not None else None)
+        if reason:
+            raise ValueError(reason)
+        if gates.get("baseline_attestation", "pending") == "confirmed":
+            raise ValueError("baseline_attestation must not already be confirmed")
+        root = project_root_from_state(state_path) if state_path is not None else None
+        if root is None:
+            raise ValueError("confirm-baseline requires a workflow ledger path")
+        performance_record = state.get("performance_contract")
+        if not isinstance(performance_record, dict):
+            raise ValueError("performance_contract must be confirmed before confirm-baseline")
+        relative = (getattr(args, "baseline_record", None) or performance_record.get("baseline_result") or "").strip()
+        if not relative:
+            raise ValueError("--baseline-record is required when the performance contract has no baseline.result")
+        record = baseline_attestation_from_file(root, relative, state)
+        if not isinstance(approval, dict):
+            raise ValueError("confirm-baseline requires a verified user approval")
+        payload = approval.get("payload")
+        arguments = payload.get("arguments") if isinstance(payload, dict) else None
+        if not isinstance(arguments, dict) or baseline_binding_from_arguments(arguments) != record:
+            raise ValueError("baseline evidence changed after user approval; create a new confirm-baseline approval")
+        state["baseline_attestation"] = record
+        gates.update({"baseline_attestation": "confirmed", "phase": "delivery"})
     elif transition == "draft-ui-system":
         reason = check(state, "ui-system")
         if reason:
@@ -998,7 +1394,7 @@ def apply_transition(state: dict[str, Any], args: argparse.Namespace, state_path
             raise ValueError(reason)
         gates.update({"review": "passed", "phase": "verification"})
     elif transition == "block-review":
-        reason = check(state, "review")
+        reason = check(state, "review", project_root_from_state(state_path) if state_path is not None else None)
         if reason:
             raise ValueError(reason)
         gates.update({"review": "blocked", "phase": "verification"})
@@ -1012,8 +1408,10 @@ def apply_transition(state: dict[str, Any], args: argparse.Namespace, state_path
         state.pop("technology_profile", None)
         state.pop("database_profile", None)
         state.pop("performance_contract", None)
+        state.pop("baseline_attestation", None)
         gates.pop("database_profile", None)
         gates.pop("performance_contract", None)
+        gates.pop("baseline_attestation", None)
     else:
         raise ValueError(f"unknown transition: {transition}")
 
@@ -1040,6 +1438,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--database-profile-version")
     parser.add_argument("--database-profile-path")
     parser.add_argument("--performance-record")
+    parser.add_argument("--baseline-record")
     parser.add_argument("--approval", help="project-relative signed approval credential for a user transition")
     parser.add_argument("--trusted-public-key", help="external trusted Ed25519 public key used to verify approval")
     return parser

@@ -13,7 +13,7 @@ The bundled read-only checker can be run before a gated operation:
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require delivery
 ```
 
-Use `business`, `technology`, `database-profile`, `performance`, `ui-system`, `ui-practices`, `ui-design`, `scaffold`, `delivery`, `repair`, or `review` for the corresponding entrypoint. A non-zero exit is a hard stop.
+Use `business`, `technology`, `database-profile`, `performance`, `baseline`, `ui-system`, `ui-practices`, `ui-design`, `scaffold`, `delivery`, `repair`, or `review` for the corresponding entrypoint. A non-zero exit is a hard stop.
 
 Use the exact state vocabulary in [canonical workflow keywords](keywords.md). The ledger is intentionally boring: every change should be easy to audit from the actor, transition, and evidence.
 
@@ -27,7 +27,7 @@ python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --tran
 
 The request command prints the canonical request path. The user should inspect its action, arguments, ledger digest, and evidence digests before signing. Run `approval.py trust-path --state .ddd/workflow-state.json` to resolve the fixed user-managed manifest, public key, receipt log, and receipt anchor outside the project; `DDD_APPROVAL_TRUST_MANIFEST` is forbidden and cannot replace that path. `--trusted-public-key` is only a matching assertion. `workflow_gate.py` rejects a missing signature, a changed ledger or record, an expired credential, a different trusted key, a request id already recorded in history, or a request id already consumed in the append-only receipt chain. A user transition appends pre/post ledger digests to that chain before the ledger is written. Read-only `--require` checks still verify every approval required by the current gate values; a hand-edited final gate with no matching user history is rejected.
 
-Available transitions are `start-business-lab`, `record-mainline`, `confirm-mainline`, `record-decision`, `confirm-design`, `approve-slice`, `select-profile`, `select-database-profile`, `confirm-performance`, `draft-ui-system`, `confirm-ui-system`, `draft-ui-practices`, `confirm-ui-practices`, `draft-ui`, `confirm-ui`, `start-delivery`, `verify`, `block`, `start-repair`, `pass-review`, `block-review`, and `reset-slice`. It applies only one gate transition per invocation and rejects invalid predecessors; recording several answers from one discovery frontier is still one discovery round.
+Available transitions are `start-business-lab`, `record-mainline`, `confirm-mainline`, `record-decision`, `confirm-design`, `approve-slice`, `select-profile`, `select-database-profile`, `confirm-performance`, `confirm-baseline`, `draft-ui-system`, `confirm-ui-system`, `draft-ui-practices`, `confirm-ui-practices`, `draft-ui`, `confirm-ui`, `start-delivery`, `verify`, `block`, `start-repair`, `pass-review`, `block-review`, and `reset-slice`. It applies only one gate transition per invocation and rejects invalid predecessors; recording several answers from one discovery frontier is still one discovery round.
 
 ## Minimum shape
 
@@ -54,6 +54,7 @@ Available transitions are `start-business-lab`, `record-mainline`, `confirm-main
     "technology_profile": "pending",
     "database_profile": "pending",
     "performance_contract": "pending",
+    "baseline_attestation": "pending",
     "ui_system": "not_started",
     "ui_practices": "not_started",
     "ui_design": "not_started",
@@ -76,6 +77,7 @@ Available transitions are `start-business-lab`, `record-mainline`, `confirm-main
 - `technology_profile` is `pending` or `selected`.
 - `database_profile` is optional for slices without persistence; when present it is `pending` or `selected` and can advance only through the signed `select-database-profile` transition.
 - `performance_contract` is optional for slices without persistence; when present it is `pending` or `confirmed` and can advance only through the signed `confirm-performance` transition over the exact `.ddd/performance/<slice-id>.yaml` record.
+- `baseline_attestation` is required for persistence, SQL, migration, index, queue, and external-call slices that have a performance contract. It is `pending` or `confirmed` and can advance only through the separate signed `confirm-baseline` transition. The attestation binds the exact baseline bytes, performance contract digest, database profile ID/version/path/digest, dataset digest and row count, measured commit, and active slice.
 - `ui_system` is `not_started`, `draft`, or `confirmed`. It records the project-level tokens, themes, layout, responsive, and accessibility contract.
 - `ui_practices` is `not_started`, `draft`, or `confirmed`. It records the version-pinned framework and component-first practice profile.
 - `ui_design` is `not_started`, `draft`, or `confirmed`. It is optional for slices without a UI surface; when a UI plan exists, delivery must wait for `confirmed`.
@@ -99,10 +101,11 @@ Available transitions are `start-business-lab`, `record-mainline`, `confirm-main
 - The bundled transition checker verifies that the corresponding UI record exists with the expected draft/confirmed status, matches the selected technology profile, and (for a confirmed UI record) includes at least one evidenced `user_decision`.
 - A confirmed UI record is not a user approval by itself. Its `confirm-ui-system`, `confirm-ui-practices`, or `confirm-ui` ledger transition must carry a verified approval credential whose record digest covers that exact file.
 - `ui-architecture` may create the UI catalog and draft plan, then set `ui_design: draft`; only a separate user confirmation may set `ui_design: confirmed`.
-- `performance-loop` may create or update a slice performance contract and baseline evidence; it must keep user budgets, workload facts, database adaptation, and measured results distinct. A persistence, SQL, migration, index, queue, or external-call slice may not enter delivery without a confirmed `.ddd/performance/<slice-id>.yaml` or an explicit user decision that the path is outside the contract.
+- `performance-loop` may create or update a slice performance contract and baseline evidence; it must keep user budgets, workload facts, database adaptation, and measured results distinct. A persistence, SQL, migration, index, queue, or external-call slice may not enter delivery without a confirmed `.ddd/performance/<slice-id>.yaml` and its separately attested baseline evidence.
 - `performance-loop` may set `performance_contract: confirmed` only through the separate signed `confirm-performance` transition. The transition binds the exact contract file and the already-selected database profile; editing `status: confirmed` in YAML does not advance the gate.
+- `performance-loop` may set `baseline_attestation: confirmed` only through the separate signed `confirm-baseline` transition after the performance contract is confirmed. The request and consumed receipt cover the baseline, contract, profile, dataset digest and row count, commit, and slice binding; changing any of them invalidates comparison and delivery.
 - `scaffold-kit` may write only the files shown in a dry-run from a configured generator after `ui_design: confirmed`; it must not change gate fields or run arbitrary commands.
-- `delivery-loop` may set `delivery: in_progress` and later `verified` or `blocked` only for the existing `active_slice`. When the ledger is database-backed, `database_profile: selected` and `performance_contract: confirmed` are mandatory and their files must still match their signed digests.
+- `delivery-loop` may set `delivery: in_progress` and later `verified` or `blocked` only for the existing `active_slice`. When the ledger is database-backed, `database_profile: selected`, `performance_contract: confirmed`, and `baseline_attestation: confirmed` are mandatory; all three records must still match their signed digests before delivery or review.
 - `repair-loop` may update the failure evidence and return the active slice to `verified` or `blocked`; it may not create a new feature or change the active slice.
 - `code-review` may set `review: passed` or `review: blocked` after reviewing the verified active-slice diff; it must not edit source files or start repair.
 - A missing, malformed, or contradictory ledger blocks work. Report the exact field and ask one question rather than repairing the state silently.

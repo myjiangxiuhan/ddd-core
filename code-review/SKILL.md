@@ -69,7 +69,7 @@ Keep `UI`, `Performance`, and `Custom` as `not applicable` only when their preco
 - Do not review the whole repository when the active slice diff is available; keep the fixed-point boundary explicit.
 - Do not fix findings in this invocation. A code defect is a later `$repair-loop`; a new domain rule, actor, boundary, or capability returns to `$ddd-core`.
 - Do not treat a generated file as proof that the component boundary is correct. Compare it with `.ddd/ui-plan.yaml` and the selected scaffold profile.
-- Do not approve persistence or SQL changes without a confirmed performance contract, a pinned database `adapter_profile`, a database-specific adaptation mapping, and a reproducible baseline or an explicitly documented reason the path is not measurable yet.
+- Do not approve persistence or SQL changes without a confirmed performance contract, a pinned database `adapter_profile`, a database-specific adaptation mapping, a consumed `confirm-baseline` attestation binding the evidence, and a reproducible baseline or an explicitly documented reason the path is not measurable yet.
 - Do not accept a generic SQL fallback when the selected database has a confirmed native capability that affects the budget; require the adapter to record the feature, version, plan evidence, and portability consequence.
 - Do not implement deferred capabilities such as file-content deduplication or Redis indexing while reviewing a basic file CRUD slice.
 - Do not suppress a missing spec silently. Report `no spec available` and mark any spec conclusion as limited.

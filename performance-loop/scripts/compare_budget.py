@@ -5,11 +5,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any
 
-from performance_gate import PerformanceGateError, project_root_from_state, require_database_profile_gate
+from performance_gate import (
+    PerformanceGateError,
+    project_path,
+    project_root_from_state,
+    require_database_profile_gate,
+    selected_profile_path,
+)
 from profile_loader import PROFILE_DIR
 from validate_contract import ContractError, load_yaml, validate
 
@@ -24,12 +31,25 @@ def load_json(path: Path) -> dict[str, Any]:
     return value
 
 
-def compare(contract_path: Path, baseline_path: Path, *, profiles_dir: Path = PROFILE_DIR) -> dict[str, Any]:
-    summary = validate(contract_path, profiles_dir=profiles_dir)
-    contract = load_yaml(contract_path)
+def compare(
+    contract_path: Path,
+    baseline_path: Path,
+    *,
+    profiles_dir: Path = PROFILE_DIR,
+    profile_override: dict[str, Any] | None = None,
+    contract_override: dict[str, Any] | None = None,
+    baseline_override: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    summary = validate(
+        contract_path,
+        profiles_dir=profiles_dir,
+        profile_override=profile_override,
+        document=contract_override,
+    )
+    contract = contract_override if contract_override is not None else load_yaml(contract_path)
     if summary["status"] != "confirmed":
         raise ContractError("performance contract must be confirmed before budget comparison")
-    baseline = load_json(baseline_path)
+    baseline = baseline_override if baseline_override is not None else load_json(baseline_path)
     if baseline.get("schema_version") != "1":
         raise ContractError('baseline schema_version must be "1"')
     if baseline.get("contract_id") != summary["id"]:
@@ -56,6 +76,10 @@ def compare(contract_path: Path, baseline_path: Path, *, profiles_dir: Path = PR
     environment = baseline.get("environment")
     if not isinstance(environment, dict) or not environment:
         raise ContractError("baseline.environment must be a non-empty object")
+    if profile_override is not None:
+        expected_database = f"{profile_override.get('engine')}:{profile_override.get('version')}"
+        if environment.get("database") != expected_database:
+            raise ContractError("baseline.environment.database does not match the selected database profile")
     workload = contract["workload"]
     for field in ("warmup_seconds", "measurement_seconds"):
         actual = baseline.get(field)
@@ -78,7 +102,12 @@ def compare(contract_path: Path, baseline_path: Path, *, profiles_dir: Path = PR
         budget = scenario["budget"]
         checked += 1
         concurrency = result.get("concurrency")
-        if isinstance(concurrency, bool) or not isinstance(concurrency, (int, float)):
+        if (
+            isinstance(concurrency, bool)
+            or not isinstance(concurrency, (int, float))
+            or not math.isfinite(float(concurrency))
+            or concurrency <= 0
+        ):
             failures.append({"scenario": scenario_id, "metric": "concurrency", "reason": "missing numeric result"})
         elif concurrency != scenario["concurrency"]:
             failures.append({
@@ -87,10 +116,17 @@ def compare(contract_path: Path, baseline_path: Path, *, profiles_dir: Path = PR
                 "actual": concurrency,
                 "expected": scenario["concurrency"],
             })
-        for metric in ("p95_ms", "p99_ms", "error_rate_percent"):
+        for metric in ("p50_ms", "p95_ms", "p99_ms", "error_rate_percent"):
+            if metric not in budget:
+                continue
             actual = result.get(metric)
             limit = budget[metric]
-            if isinstance(actual, bool) or not isinstance(actual, (int, float)):
+            if (
+                isinstance(actual, bool)
+                or not isinstance(actual, (int, float))
+                or not math.isfinite(float(actual))
+                or actual < 0
+            ):
                 failures.append({"scenario": scenario_id, "metric": metric, "reason": "missing numeric result"})
             elif actual > limit:
                 failures.append({"scenario": scenario_id, "metric": metric, "actual": actual, "limit": limit})
@@ -99,14 +135,24 @@ def compare(contract_path: Path, baseline_path: Path, *, profiles_dir: Path = PR
                 continue
             actual = result.get(metric)
             limit = budget[metric]
-            if isinstance(actual, bool) or not isinstance(actual, (int, float)):
+            if (
+                isinstance(actual, bool)
+                or not isinstance(actual, (int, float))
+                or not math.isfinite(float(actual))
+                or actual < 0
+            ):
                 failures.append({"scenario": scenario_id, "metric": metric, "reason": "missing numeric result"})
             elif actual > limit:
                 failures.append({"scenario": scenario_id, "metric": metric, "actual": actual, "limit": limit})
         if "target_rps" in scenario:
             actual = result.get("throughput_rps")
             target = scenario["target_rps"]
-            if isinstance(actual, bool) or not isinstance(actual, (int, float)):
+            if (
+                isinstance(actual, bool)
+                or not isinstance(actual, (int, float))
+                or not math.isfinite(float(actual))
+                or actual < 0
+            ):
                 failures.append({"scenario": scenario_id, "metric": "throughput_rps", "reason": "missing numeric result"})
             elif actual < target:
                 failures.append({"scenario": scenario_id, "metric": "throughput_rps", "actual": actual, "target": target})
@@ -129,7 +175,7 @@ def main() -> int:
     parser.add_argument("--profiles-dir", type=Path, default=PROFILE_DIR)
     args = parser.parse_args()
     try:
-        state, _ = require_database_profile_gate(
+        state, _, selected_profile, selected_contract = require_database_profile_gate(
             args.state,
             args.trusted_public_key,
             require_performance=True,
@@ -140,7 +186,29 @@ def main() -> int:
         root = project_root_from_state(args.state)
         if args.contract.resolve() != (root / state_record["path"]).resolve():
             raise PerformanceGateError("baseline contract path does not match the signed performance_contract")
-        result = compare(args.contract, args.baseline, profiles_dir=args.profiles_dir)
+        if not isinstance(selected_contract, dict):
+            raise PerformanceGateError("confirmed performance contract snapshot is missing")
+        from performance_gate import load_attested_baseline
+
+        attested_baseline = load_attested_baseline(args.state, state)
+        contract_value = selected_contract
+        baseline_record = contract_value.get("baseline")
+        if not isinstance(baseline_record, dict) or not isinstance(baseline_record.get("result"), str):
+            raise PerformanceGateError("confirmed performance contract must bind a baseline.result path")
+        expected_baseline = project_path(root, baseline_record["result"], "baseline result")
+        if args.baseline.resolve() != expected_baseline:
+            raise PerformanceGateError("baseline path does not match the signed performance contract")
+        selected_path = selected_profile_path(args.state, state["database_profile"])
+        if args.profiles_dir.resolve() not in {selected_path.parent.resolve(), PROFILE_DIR.resolve()}:
+            raise PerformanceGateError("--profiles-dir must be the selected database profile directory")
+        result = compare(
+            args.contract,
+            args.baseline,
+            profiles_dir=selected_path.parent,
+            profile_override=selected_profile,
+            contract_override=selected_contract,
+            baseline_override=attested_baseline,
+        )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0 if result["ok"] else 1
     except (PerformanceGateError, ContractError) as exc:

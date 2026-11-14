@@ -449,6 +449,7 @@ def consume_approval(
             "sequence": receipts["sequence"] + 1,
             "previous_digest": receipts["head_digest"],
             "request_id": request_id,
+            "action": payload.get("action"),
             "payload_digest": approval.get("payload_digest"),
             "public_key_fingerprint": approval.get("public_key_fingerprint"),
             "project_id": project_id,
@@ -610,6 +611,7 @@ def verify_credential(
     used_request_ids: set[str] | None = None,
     check_state: bool = True,
     allow_consumed: bool = False,
+    require_consumed: bool = False,
 ) -> dict[str, Any]:
     state_path = state_path.resolve()
     root = project_root_from_state(state_path)
@@ -641,6 +643,8 @@ def verify_credential(
         raise ApprovalError("approval receipt does not match the trusted key")
     if not allow_consumed and receipt is not None:
         raise ApprovalError("approval credential has already been consumed")
+    if require_consumed and receipt is None:
+        raise ApprovalError("approval credential was not consumed by a completed workflow transition")
     if used_request_ids and payload.get("request_id") in used_request_ids:
         raise ApprovalError("approval credential has already been consumed")
     if check_state and payload.get("state_digest") != digest_file(state_path):

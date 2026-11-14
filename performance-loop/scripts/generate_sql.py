@@ -10,8 +10,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from performance_gate import PerformanceGateError, require_database_profile_gate
-from profile_loader import PROFILE_DIR, ProfileError, load_profile, load_yaml
+from performance_gate import PerformanceGateError, require_database_profile_gate, selected_profile_path
+from profile_loader import PROFILE_DIR, ProfileError, load_yaml
 
 
 IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -283,7 +283,7 @@ def main() -> int:
     parser.add_argument("--profiles-dir", type=Path, default=PROFILE_DIR)
     args = parser.parse_args()
     try:
-        _, database_record = require_database_profile_gate(
+        _, database_record, profile, _ = require_database_profile_gate(
             args.state,
             args.trusted_public_key,
             require_performance=False,
@@ -291,7 +291,9 @@ def main() -> int:
         requested_profile = Path(args.profile).stem if Path(args.profile).suffix in {".yaml", ".yml"} else args.profile
         if requested_profile != database_record["id"]:
             raise SqlGenerationError("requested SQL profile does not match the signed workflow database_profile")
-        profile = load_profile(args.profile, profiles_dir=args.profiles_dir)
+        selected_path = selected_profile_path(args.state, database_record)
+        if args.profiles_dir.resolve() not in {selected_path.parent.resolve(), PROFILE_DIR.resolve()}:
+            raise SqlGenerationError("--profiles-dir must be the selected database profile directory")
         spec = load_spec(args.spec)
         print(json.dumps(generate(profile, spec), ensure_ascii=False, indent=2))
         return 0

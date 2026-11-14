@@ -13,7 +13,7 @@ This repository defines a deliberately user-gated DDD workflow. The entrypoint s
 - `research-loop`: collect primary-source evidence for one unresolved question.
 - `oss-archaeology`: study one pinned open-source project and separate its facts from candidate rules for our domain.
 - `prototype-loop`: answer one design question with a throwaway experiment.
-- `performance-loop`: select a version-pinned database profile, generate bounded database-specific SQL, define and verify one slice performance contract, and keep a reproducible metric baseline.
+- `performance-loop`: select a version-pinned database profile, generate bounded database-specific SQL, define and verify one slice performance contract, and obtain a separate user attestation for the reproducible metric baseline.
 - `to-spec`: synthesize confirmed decisions into a reviewable handoff spec.
 - `to-slices`: plan vertical slices and explicit blockers from a confirmed spec.
 - `adapter-kit`: after slice approval, let the user select or confirm one exact technology profile; do not implement it.
@@ -22,7 +22,7 @@ This repository defines a deliberately user-gated DDD workflow. The entrypoint s
 - `ui-architecture`: collect primary-source UI-library evidence and confirm one component composition plan for a UI slice.
 - `scaffold-kit`: inspect and explicitly apply one project-configured, `ng generate`-style artifact generator.
 - `template-kit`: inspect pinned references and create or extract confirmed clean-room UI templates with provenance; do not copy source code.
-- `delivery-loop`: after the profile gate, implement and verify one active slice, then stop.
+- `delivery-loop`: after the required profile, contract, and (for database-backed slices) baseline-attestation gates, implement and verify one active slice, then stop.
 - `repair-loop`: reproduce, fix, and regression-test one confirmed failure, then stop.
 - `code-review`: review one verified fixed-point diff on separate Standards, Spec, DDD, UI, and Custom axes; never edit source.
 - `retro-loop`: turn session failures into approved deterministic checks or rules.
