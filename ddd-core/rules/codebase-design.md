@@ -15,6 +15,8 @@ Use these words consistently when a domain slice crosses into code design:
 - **Locality**: how much behavior can be understood and changed in one place.
 - **Leverage**: how much caller complexity a module removes.
 
+For a performance-sensitive seam, its interface also states the measurable budget, workload assumptions, ordering guarantees, consistency/staleness behavior, pagination or batching semantics, timeout, and resource limits. An adapter may use database-native behavior, but it must expose the resulting semantics and evidence at the seam instead of hiding a costly fallback behind a generic interface.
+
 Do not substitute overloaded words such as “service”, “component”, “API”, or “boundary” when the distinction matters. DDD `boundary` remains a domain-context term; `seam` is the code-design term.
 
 Before adding a new seam, state what it makes testable, what it hides, and what it leaves outside scope. Prefer one deep seam over several shallow wrappers.
