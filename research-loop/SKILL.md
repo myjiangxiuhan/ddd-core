@@ -7,6 +7,8 @@ description: Investigate one factual question against primary sources and save a
 
 This is a user-invoked evidence entrypoint. Use it when one decision needs external documentation, source code, a specification, or a first-party API fact. For a full open-source project study, use `$oss-archaeology`. Research supplies evidence to `$ddd-core`; it does not replace the user's decision.
 
+Keep the research session separate from business discovery. A concrete business example only scopes the question; it does not authorize interviewing the user or collecting product rules.
+
 ## Process
 
 1. State one answerable question, scope, date/version boundary, and what decision the answer will inform. Choose a depth: `fact` for one source-backed answer, `comparison` for several sources, or `deep` for a cited note with conflicts and open questions.
@@ -14,6 +16,8 @@ This is a user-invoked evidence entrypoint. Use it when one decision needs exter
 3. Separate facts, inferences, conflicts, and unknowns. Do not recommend a product decision unless the user asked for a recommendation; when recommending, show alternatives and consequences.
 4. Save one concise Markdown note under the project's established research directory, or `.ddd/research/` when none exists. Include question, sources, findings, conflicts, and open decisions.
 5. Stop and tell the user which decision frontier the note unblocks. Do not invoke `$ddd-core` automatically.
+
+After step 5, stop. Do not ask follow-up business questions in the same research loop. A later business interpretation must be a separate explicit `$business-lab` or `$ddd-core` invocation.
 
 ## Hard stops
 

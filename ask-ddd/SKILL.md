@@ -5,7 +5,7 @@ description: Route a request to the smallest explicit DDD workflow without execu
 
 # ask-ddd
 
-This is a user-invoked router. Read the relevant skill descriptions before recommending a route. Choose one route, state its precondition, and stop; never invoke the route automatically.
+This is a user-invoked router. Read the candidate skill's full `SKILL.md` and its required references before recommending a route; the short description and trigger table are only an index. Choose one route, state its precondition, and stop; never invoke the route automatically.
 
 ## Trigger words
 
@@ -22,9 +22,14 @@ This is a user-invoked router. Read the relevant skill descriptions before recom
 | docs, API facts, standards, external evidence | `$research-loop` |
 | study one pinned open-source project for business rules or lifecycle experience | `$oss-archaeology` |
 | state model, behavior, UI, performance question needs a runnable answer | `$prototype-loop` |
+| performance budget, SQL access path, query plan, database capability, benchmark, or load target | `$performance-loop` |
 | stack, framework, database, cache, profile after slice approval | `$adapter-kit` |
+| UI tokens, theme modes, layout shell, responsive rules, accessibility baseline | `$ui-system` |
+| React, Vue, Angular, component-first, hooks/composables/services, UI-library best practices | `$ui-practices` |
 | component choice, page composition, library inventory, React/ProComponents evidence | `$ui-architecture` |
+| extract or create a reusable UI template from an OSS project, design reference, or local precedent | `$template-kit` |
 | configured generator, scaffold dry-run, `ng c`-style artifact creation | `$scaffold-kit` |
+| approved slice with selected profile is ready to implement or verify | `$delivery-loop` |
 | review, diff, PR, standards, spec, DDD boundary, UI composition, custom checks | `$code-review` |
 | after build, went sideways, improve the agent workflow | `$retro-loop` |
 | glossary, terms, ADR, workflow records | `$rule-workbench` |

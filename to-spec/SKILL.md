@@ -11,7 +11,7 @@ This is a user-invoked synthesis step. Use it after discovery or wayfinding when
 
 1. Read the workflow ledger, `.ddd/GLOSSARY.md` or `.ddd/GLOSSARY-MAP.md`, ADRs, and the confirmed conversation evidence. Use canonical terms; if a term is ambiguous, stop and use `$domain-modeling` before writing the spec.
 2. Identify the highest public seam at which the behavior can be tested. If the seam is new or disputed, show the alternatives and ask one question before writing the spec.
-3. Write one concise spec containing: problem, outcome, user stories, user-owned decisions, domain rules, test decisions, non-goals, deferred capabilities, and unresolved questions. Do not include stale file paths or implementation snippets.
+3. Write one concise spec containing: problem, outcome, user stories, user-owned decisions, domain rules, test decisions, performance constraints and measurement seam when material, non-goals, deferred capabilities, and unresolved questions. Do not include stale file paths or implementation snippets. Keep database-specific SQL and index choices in the later performance adapter record.
 4. Mark the spec `draft` and ask the user to confirm the seam and scope. Persist `confirmed` only after explicit confirmation.
 5. Stop. The next explicit step is `$to-slices` or a bounded `$delivery-loop` when the work is small.
 

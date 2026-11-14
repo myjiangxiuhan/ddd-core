@@ -5,7 +5,7 @@ description: Sharpen the project's business language while designing by challeng
 
 # domain-modeling
 
-This is a vocabulary layer, not a feature-planning or implementation entrypoint. It may run beneath `business-lab`, `ddd-core`, `triage-loop`, `to-spec`, `to-slices`, `delivery-loop`, and `code-review` when language is the problem. It does not advance workflow gates.
+This is a vocabulary layer, not a feature-planning or implementation entrypoint. It may run beneath `business-lab`, `ddd-core`, `triage-loop`, `to-spec`, `to-slices`, `ui-system`, `ui-practices`, `ui-architecture`, `performance-loop`, `delivery-loop`, and `code-review` when language is the problem. It does not advance workflow gates.
 
 ## Canonical records
 

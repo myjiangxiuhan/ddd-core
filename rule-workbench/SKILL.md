@@ -25,7 +25,7 @@ Report pure rule checks, conflicts, missing evidence, assumptions, pending decis
 ## Hard stops
 
 - Do not promote one-off code or feedback into a universal rule without evidence.
-- Do not change `domain_design`, `slice_approval`, `technology_profile`, or `delivery` gates unless the matching explicit user action occurred in the same workflow.
+- Do not change `domain_design`, `slice_approval`, `technology_profile`, `ui_system`, `ui_practices`, `ui_design`, or `delivery` gates unless the matching explicit user action occurred in the same workflow.
 - Do not invoke another skill automatically or use a record edit as a substitute for user confirmation.
 
 ## Canonical rules
