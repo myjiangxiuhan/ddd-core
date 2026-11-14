@@ -10,9 +10,15 @@ import sys
 from pathlib import Path
 from typing import Any
 
+APPROVAL_SCRIPTS = Path(__file__).resolve().parents[2] / "ddd-core" / "scripts"
+if str(APPROVAL_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(APPROVAL_SCRIPTS))
+from approval import ApprovalError, consume_approval, digest_file, digest_json, domain_design_digest, verify_credential  # type: ignore  # noqa: E402
+
 
 PLACEHOLDER_RE = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
 VALID_AXES = {"standards", "spec", "ddd", "ui", "custom"}
+TEMPLATE_SOURCE_KINDS = {"oss", "local", "design-reference", "user"}
 
 
 class ConfigError(ValueError):
@@ -50,6 +56,38 @@ def load_yaml(path: Path) -> dict[str, Any]:
     return value
 
 
+def load_yaml_record(path: Path, label: str) -> dict[str, Any]:
+    try:
+        import yaml  # type: ignore
+    except ImportError as exc:
+        raise ConfigError("PyYAML is required to read scaffold records") from exc
+    try:
+        value = yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    except FileNotFoundError as exc:
+        raise ConfigError(f"{label} not found: {path}") from exc
+    except OSError as exc:
+        raise ConfigError(f"cannot read {label}: {exc}") from exc
+    except yaml.YAMLError as exc:
+        raise ConfigError(f"{label} is not valid YAML: {exc}") from exc
+    if not isinstance(value, dict):
+        raise ConfigError(f"{label} root must be an object")
+    return value
+
+
+def load_json_record(path: Path, label: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8-sig"))
+    except FileNotFoundError as exc:
+        raise ConfigError(f"{label} not found: {path}") from exc
+    except OSError as exc:
+        raise ConfigError(f"cannot read {label}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise ConfigError(f"{label} is not valid JSON: {exc.msg}") from exc
+    if not isinstance(value, dict):
+        raise ConfigError(f"{label} root must be an object")
+    return value
+
+
 def choose_profile(config: dict[str, Any], profile_id: str | None) -> tuple[str, dict[str, Any]]:
     selected = profile_id or config.get("default_profile")
     if not isinstance(selected, str) or not selected.strip():
@@ -76,13 +114,47 @@ def project_root(config_path: Path, explicit_root: str | None) -> Path:
     return root
 
 
-def resolve_generator(profile: dict[str, Any], kind: str, generator_id: str) -> dict[str, Any]:
+def managed_project_config(config_path: Path, root: Path) -> bool:
+    ddd = root / ".ddd"
+    managed = (
+        config_path.resolve() == (ddd / "scaffold.yaml").resolve()
+        or (ddd / "workflow-state.json").exists()
+        or (ddd / "ui-system.yaml").exists()
+        or (ddd / "ui-practices.yaml").exists()
+    )
+    if managed and config_path.resolve() != (ddd / "scaffold.yaml").resolve():
+        raise ConfigError("managed projects must use the project-owned .ddd/scaffold.yaml")
+    return managed
+
+
+def resolve_generator(
+    profile: dict[str, Any],
+    kind: str,
+    generator_id: str,
+    root: Path | None = None,
+    profile_id: str | None = None,
+    trusted_public_key: str | None = None,
+) -> dict[str, Any]:
     generators = profile["generators"].get(kind)
     if not isinstance(generators, dict):
         raise ConfigError(f"generator kind not found: {kind}")
     generator = generators.get(generator_id)
     if not isinstance(generator, dict):
         raise ConfigError(f"generator not found: {kind}:{generator_id}")
+    if kind == "template":
+        validate_template(generator, generator_id)
+        if root is not None:
+            if not isinstance(profile_id, str) or not profile_id.strip():
+                raise ConfigError("profile id is required to validate a project template registration")
+            validate_project_gate(root, profile_id, str(profile.get("version")), True, trusted_public_key)
+            validate_template_registration(
+                generator,
+                generator_id,
+                root,
+                profile_id,
+                str(profile.get("version")),
+                trusted_public_key,
+            )
     files = generator.get("files")
     if not isinstance(files, list) or not files:
         raise ConfigError(f"generator {kind}:{generator_id} must declare files")
@@ -94,6 +166,177 @@ def resolve_generator(profile: dict[str, Any], kind: str, generator_id: str) -> 
         if has_template == has_template_file:
             raise ConfigError(f"generator {kind}:{generator_id} file {index} needs exactly one template source")
     return generator
+
+
+def template_sources(template: dict[str, Any]) -> list[Any]:
+    sources = template.get("sources")
+    if sources is None:
+        source = template.get("source")
+        return [source] if source is not None else []
+    return sources if isinstance(sources, list) else []
+
+
+def validate_template(template: dict[str, Any], template_id: str) -> None:
+    if template.get("status") != "confirmed":
+        raise ConfigError(f"template {template_id} must have status: confirmed")
+    if not isinstance(template.get("version"), str) or not template["version"].strip():
+        raise ConfigError(f"template {template_id} must declare a version")
+    sources = template.get("sources")
+    if sources is None:
+        source = template.get("source")
+        sources = [source] if source is not None else []
+    if not isinstance(sources, list) or not sources:
+        raise ConfigError(f"template {template_id} must declare source or sources provenance")
+    for index, source in enumerate(sources):
+        if not isinstance(source, dict):
+            raise ConfigError(f"template {template_id} sources[{index}] must be an object")
+        source_kind = source.get("kind")
+        if source_kind not in TEMPLATE_SOURCE_KINDS:
+            raise ConfigError(f"template {template_id} sources[{index}].kind must be one of {sorted(TEMPLATE_SOURCE_KINDS)}")
+        for field in ("locator", "ref", "license", "attribution", "evidence"):
+            if not isinstance(source.get(field), str) or not source[field].strip():
+                raise ConfigError(f"template {template_id} sources[{index}].{field} is required")
+        extraction = source.get("extraction", "pattern_only")
+        if extraction not in {"pattern_only", "licensed_copy"}:
+            raise ConfigError(f"template {template_id} sources[{index}].extraction must be pattern_only or licensed_copy")
+    mapping = template.get("mapping")
+    if not isinstance(mapping, dict):
+        raise ConfigError(f"template {template_id} must declare mapping")
+    for field in ("ui_system", "ui_practices"):
+        if not isinstance(mapping.get(field), str) or not mapping[field].strip():
+            raise ConfigError(f"template {template_id} mapping.{field} is required")
+    for field in ("theme_roles", "layout_regions", "primitives"):
+        if not isinstance(mapping.get(field), list) or not mapping[field]:
+            raise ConfigError(f"template {template_id} mapping.{field} is required")
+    adaptation = mapping.get("adaptation")
+    if not isinstance(adaptation, dict):
+        raise ConfigError(f"template {template_id} mapping.adaptation is required")
+    for field in ("source_framework", "source_library", "target_framework", "target_library"):
+        if not isinstance(adaptation.get(field), str) or not adaptation[field].strip():
+            raise ConfigError(f"template {template_id} mapping.adaptation.{field} is required")
+    if not isinstance(adaptation.get("primitive_map"), list) or not adaptation["primitive_map"]:
+        raise ConfigError(f"template {template_id} mapping.adaptation.primitive_map is required")
+    if not isinstance(adaptation.get("target_invariants"), list) or not adaptation["target_invariants"]:
+        raise ConfigError(f"template {template_id} mapping.adaptation.target_invariants is required")
+    slots = template.get("slots", [])
+    public_seams = template.get("public_seams", [])
+    if not isinstance(slots, list) or not isinstance(public_seams, list) or not (slots or public_seams):
+        raise ConfigError(f"template {template_id} needs slots or public_seams")
+    if not isinstance(template.get("variables"), list) or not template["variables"]:
+        raise ConfigError(f"template {template_id} must declare variables")
+    if not isinstance(template.get("review_checks"), list) or not template["review_checks"]:
+        raise ConfigError(f"template {template_id} must declare review_checks")
+    if template.get("status") == "confirmed":
+        source_evidence_digests = template.get("source_evidence_digests")
+        if not isinstance(source_evidence_digests, dict) or not source_evidence_digests:
+            raise ConfigError(f"template {template_id} must declare source_evidence_digests")
+        confirmation = template.get("confirmation")
+        if not isinstance(confirmation, dict):
+            raise ConfigError(f"template {template_id} needs a confirmation record")
+        if confirmation.get("status") != "confirmed":
+            raise ConfigError(f"template {template_id} confirmation must have status: confirmed")
+        if confirmation.get("source") != "user_decision":
+            raise ConfigError(f"template {template_id} confirmation.source must be user_decision")
+        if not isinstance(confirmation.get("evidence"), str) or not confirmation["evidence"].strip():
+            raise ConfigError(f"template {template_id} confirmation.evidence is required")
+
+
+def validate_template_registration(
+    template: dict[str, Any],
+    template_id: str,
+    root: Path,
+    profile_id: str,
+    profile_version: str,
+    trusted_public_key: str | None = None,
+) -> None:
+    record_ref = template.get("record")
+    if not isinstance(record_ref, str) or not record_ref.strip():
+        raise ConfigError(f"template {template_id} must declare record")
+    record_path = safe_relative(root, record_ref)
+    record = load_yaml_record(record_path, f"template record {template_id}")
+    validate_template(record, template_id)
+    if record.get("schema_version") != "1":
+        raise ConfigError(f"template record {template_id} schema_version must be \"1\"")
+    if record.get("id") != template_id:
+        raise ConfigError(f"template record id does not match registered id: {record.get('id')!r}")
+    if record.get("version") != template.get("version"):
+        raise ConfigError(f"template {template_id} record version does not match scaffold registration")
+    if record.get("profile") != profile_id or record.get("profile_version") != profile_version:
+        raise ConfigError(f"template {template_id} record profile does not match scaffold profile")
+    mapping = record.get("mapping")
+    if not isinstance(mapping, dict):
+        raise ConfigError(f"template record {template_id} mapping is required")
+    for field in ("ui_system", "ui_practices"):
+        expected_path = (root / ".ddd" / f"{field.replace('_', '-')}.yaml").resolve()
+        mapped_path = safe_relative(root, mapping.get(field, ""))
+        if mapped_path != expected_path:
+            raise ConfigError(f"template {template_id} mapping.{field} must point to .ddd/{field.replace('_', '-')}.yaml")
+    expected_file_digests = template_file_digests(record, root)
+    declared_file_digests = record.get("file_digests")
+    if expected_file_digests != declared_file_digests:
+        raise ConfigError(f"template {template_id} file_digests do not match its template files")
+    expected_source_evidence_digests: dict[str, str] = {}
+    for source in template_sources(record):
+        if isinstance(source, dict) and isinstance(source.get("evidence"), str):
+            evidence = source["evidence"]
+            evidence_path = safe_relative(root, evidence)
+            if not evidence_path.is_file():
+                raise ConfigError(f"template {template_id} source evidence not found: {evidence}")
+            expected_source_evidence_digests[evidence] = digest_file(evidence_path)
+    expected_source_evidence_digests = dict(sorted(expected_source_evidence_digests.items()))
+    if expected_source_evidence_digests != record.get("source_evidence_digests"):
+        raise ConfigError(f"template {template_id} source_evidence_digests do not match its evidence files")
+    confirmation_evidence = record["confirmation"].get("evidence")
+    confirmation_path = safe_relative(root, confirmation_evidence)
+    if not confirmation_path.exists():
+        raise ConfigError(f"template {template_id} confirmation evidence not found: {confirmation_evidence}")
+    state_path = root / ".ddd" / "workflow-state.json"
+    if not state_path.is_file():
+        raise ConfigError(f"template {template_id} needs a workflow ledger for signed confirmation")
+    try:
+        verify_credential(
+            state_path,
+            confirmation_path,
+            trusted_public_key,
+            expected_action="template:confirm",
+            expected_arguments={"template_id": template_id, "record": record_ref},
+            expected_records=[record_ref],
+            # Template confirmation is a separate artifact approval.  Its
+            # signed record digest is the binding; the workflow ledger may
+            # legitimately advance after the template was confirmed.
+            check_state=False,
+        )
+    except ApprovalError as exc:
+        raise ConfigError(f"template {template_id} confirmation credential is invalid: {exc}") from exc
+    ui_plan_path = root / ".ddd" / "ui-plan.yaml"
+    if ui_plan_path.exists():
+        ui_plan = load_yaml_record(ui_plan_path, "ui-plan.yaml")
+        if ui_plan.get("template") != record_ref:
+            raise ConfigError(f"template {template_id} record is not the template approved by ui-plan.yaml")
+    comparable_fields = (
+        "description",
+        "required_components",
+        "mapping",
+        "slots",
+        "public_seams",
+        "variables",
+        "review_checks",
+        "files",
+        "file_digests",
+        "source_evidence_digests",
+        "confirmation",
+    )
+    for field in comparable_fields:
+        if record.get(field, [] if field in {"required_components", "slots", "public_seams", "variables", "review_checks", "files"} else None) != template.get(field, [] if field in {"required_components", "slots", "public_seams", "variables", "review_checks", "files"} else None):
+            raise ConfigError(f"template {template_id} registration drift in {field}")
+    if template_sources(record) != template_sources(template):
+        raise ConfigError(f"template {template_id} registration drift in sources")
+    for source in template_sources(record):
+        if isinstance(source, dict) and isinstance(source.get("evidence"), str):
+            safe_relative(root, source["evidence"])
+    for item in record.get("files", []):
+        if isinstance(item, dict) and isinstance(item.get("template_file"), str):
+            template_text(item, root)
 
 
 def words(raw: str) -> list[str]:
@@ -130,6 +373,16 @@ def safe_relative(root: Path, relative: str) -> Path:
     return resolved
 
 
+def safe_generated_output(root: Path, path: Path) -> Path:
+    """Keep a generator from overwriting the workflow ledger or approvals."""
+    ddd = (root / ".ddd").resolve()
+    try:
+        path.resolve().relative_to(ddd)
+    except ValueError:
+        return path
+    raise ConfigError("scaffold output may not write inside the project .ddd directory")
+
+
 def template_text(item: dict[str, Any], root: Path) -> str:
     if isinstance(item.get("template"), str):
         return item["template"]
@@ -139,9 +392,246 @@ def template_text(item: dict[str, Any], root: Path) -> str:
     except ValueError as exc:
         raise ConfigError(f"template_file escapes project root: {item['template_file']}") from exc
     try:
+        template_path.relative_to((root / ".ddd").resolve())
+    except ValueError:
+        pass
+    else:
+        try:
+            template_path.relative_to((root / ".ddd" / "templates").resolve())
+        except ValueError as exc:
+            raise ConfigError("template_file may only read from .ddd/templates inside a managed project") from exc
+    try:
         return template_path.read_text(encoding="utf-8")
     except OSError as exc:
         raise ConfigError(f"cannot read template_file {template_path}: {exc}") from exc
+
+
+def template_file_digests(template: dict[str, Any], root: Path) -> dict[str, str]:
+    result: dict[str, str] = {}
+    files = template.get("files", [])
+    if not isinstance(files, list):
+        raise ConfigError("template files must be an array")
+    for item in files:
+        if not isinstance(item, dict) or not isinstance(item.get("template_file"), str):
+            continue
+        relative = item["template_file"]
+        path = safe_relative(root, relative)
+        result[relative] = digest_file(path)
+    return dict(sorted(result.items()))
+
+
+def history_records(state: dict[str, Any], transition: str) -> list[str]:
+    if transition == "confirm-mainline":
+        artifact = state.get("business_artifact")
+        return [artifact] if isinstance(artifact, str) and artifact.strip() else []
+    if transition == "confirm-ui-system":
+        return [".ddd/ui-system.yaml"]
+    if transition == "confirm-ui-practices":
+        return [".ddd/ui-practices.yaml"]
+    if transition == "confirm-ui":
+        return [".ddd/ui-plan.yaml"]
+    return []
+
+
+def validate_signed_history_result(state: dict[str, Any], item: dict[str, Any], payload: dict[str, Any]) -> None:
+    transition = item.get("transition")
+    arguments = payload.get("arguments")
+    if not isinstance(arguments, dict):
+        raise ConfigError(f"history approval for {transition} has no signed arguments")
+    if arguments.get("transition") != transition:
+        raise ConfigError(f"history approval action arguments do not match {transition}")
+    if arguments.get("evidence") != item.get("evidence"):
+        raise ConfigError(f"history approval evidence does not match {transition}")
+    if transition == "record-decision":
+        decision_id = arguments.get("decision_id")
+        decision = next((entry for entry in state.get("decisions", []) if isinstance(entry, dict) and entry.get("id") == decision_id), None)
+        if decision is None or decision.get("status") != "answered" or decision.get("source") != "user_decision":
+            raise ConfigError("signed record-decision no longer matches an answered user decision")
+        if (
+            decision.get("answer") != arguments.get("answer")
+            or decision.get("evidence") != item.get("evidence")
+            or arguments.get("decision_digest") != digest_json(decision)
+        ):
+            raise ConfigError("signed record-decision no longer matches the decision record")
+    elif transition == "confirm-mainline":
+        if state.get("business_artifact") != arguments.get("artifact"):
+            raise ConfigError("signed confirm-mainline no longer matches business_artifact")
+    elif transition == "confirm-design":
+        if arguments.get("domain_design_digest") != domain_design_digest(state):
+            raise ConfigError("signed confirm-design no longer matches the domain design snapshot")
+    elif transition == "approve-slice":
+        current = state.get("active_slice")
+        if (
+            not isinstance(current, dict)
+            or current.get("id") != arguments.get("slice_id")
+            or current.get("name") != arguments.get("slice_name")
+            or arguments.get("slice_digest") != digest_json(current)
+        ):
+            raise ConfigError("signed approve-slice no longer matches active_slice")
+    elif transition == "select-profile":
+        current = state.get("technology_profile")
+        if (
+            not isinstance(current, dict)
+            or current.get("id") != arguments.get("profile_id")
+            or str(current.get("version")) != str(arguments.get("profile_version"))
+            or arguments.get("profile_digest") != digest_json(current)
+        ):
+            raise ConfigError("signed select-profile no longer matches technology_profile")
+
+
+def validate_project_gate(
+    root: Path,
+    profile_id: str,
+    profile_version: str,
+    managed_project: bool,
+    trusted_public_key: str | None = None,
+) -> None:
+    if not managed_project:
+        return
+    if not (trusted_public_key or "").strip():
+        raise ConfigError("managed scaffold checks require an explicit --trusted-public-key assertion")
+    ddd = root / ".ddd"
+    if not ddd.is_dir():
+        raise ConfigError(f"managed project root has no .ddd directory: {root}")
+    state = load_json_record(ddd / "workflow-state.json", "workflow ledger")
+    if state.get("schema_version") != "1":
+        raise ConfigError('workflow ledger schema_version must be "1"')
+    if state.get("control_mode") != "human_led":
+        raise ConfigError("workflow ledger control_mode must be human_led")
+    gates = state.get("gates")
+    if not isinstance(gates, dict):
+        raise ConfigError("workflow ledger gates must be an object")
+    required_gates = {
+        "business_discovery": "confirmed",
+        "domain_design": "confirmed",
+        "slice_approval": "approved",
+        "technology_profile": "selected",
+        "ui_system": "confirmed",
+        "ui_practices": "confirmed",
+        "ui_design": "confirmed",
+        "delivery": "not_started",
+    }
+    for field, expected in required_gates.items():
+        if gates.get(field) != expected:
+            raise ConfigError(f"workflow gate {field} must be {expected}")
+    if gates.get("phase") != "delivery":
+        raise ConfigError("workflow gate phase must be delivery")
+    decisions = state.get("decisions")
+    if not isinstance(decisions, list) or not any(
+        isinstance(item, dict)
+        and item.get("status") == "answered"
+        and item.get("source") == "user_decision"
+        and isinstance(item.get("evidence"), str)
+        and item["evidence"].strip()
+        for item in decisions
+    ):
+        raise ConfigError("domain design needs an answered user_decision before scaffold")
+    active_slice = state.get("active_slice")
+    if not isinstance(active_slice, dict) or not isinstance(active_slice.get("id"), str) or not active_slice["id"].strip():
+        raise ConfigError("workflow ledger active_slice must contain an id")
+    technology = state.get("technology_profile")
+    if not isinstance(technology, dict) or technology.get("id") != profile_id or str(technology.get("version")) != profile_version:
+        raise ConfigError("workflow ledger technology_profile does not match scaffold profile")
+    history = state.get("history")
+    if not isinstance(history, list):
+        raise ConfigError("workflow ledger history must be an array")
+    required_user_transitions = {
+        "confirm-mainline",
+        "confirm-design",
+        "approve-slice",
+        "select-profile",
+        "confirm-ui-system",
+        "confirm-ui-practices",
+        "confirm-ui",
+    }
+    observed_user_transitions: set[str] = set()
+    seen_request_ids: set[str] = set()
+    recorded_decisions: set[str] = set()
+    for item in history:
+        if not isinstance(item, dict):
+            continue
+        if item.get("actor") != "user":
+            if "approval" in item:
+                raise ConfigError(f"agent history entry {item.get('transition')} cannot carry a user approval")
+            continue
+        transition = item.get("transition")
+        if not isinstance(transition, str) or not transition:
+            raise ConfigError("user history entry must name a transition")
+        observed_user_transitions.add(transition)
+        approval = item.get("approval")
+        if not isinstance(approval, dict):
+            raise ConfigError(f"user history entry {transition} lacks a signed approval")
+        request_id = approval.get("request_id")
+        credential_ref = approval.get("credential")
+        if not isinstance(request_id, str) or not request_id.strip() or not isinstance(credential_ref, str) or not credential_ref.strip():
+            raise ConfigError(f"user history entry {transition} has incomplete approval metadata")
+        if request_id in seen_request_ids:
+            raise ConfigError(f"approval request was replayed in history: {request_id}")
+        seen_request_ids.add(request_id)
+        credential_path = safe_relative(root, credential_ref)
+        try:
+            verified = verify_credential(
+                ddd / "workflow-state.json",
+                credential_path,
+                trusted_public_key,
+                expected_action=f"workflow:{transition}",
+                expected_records=history_records(state, transition),
+                check_state=False,
+                allow_consumed=True,
+            )
+        except ApprovalError as exc:
+            raise ConfigError(f"user history approval for {transition} is invalid: {exc}") from exc
+        if verified["request_id"] != request_id or verified["payload_digest"] != approval.get("payload_digest"):
+            raise ConfigError(f"user history approval metadata does not match its credential: {transition}")
+        if verified["public_key_fingerprint"] != approval.get("public_key_fingerprint"):
+            raise ConfigError(f"user history approval key metadata does not match its credential: {transition}")
+        payload = verified["payload"]
+        validate_signed_history_result(state, item, payload)
+        if transition == "record-decision":
+            arguments = payload.get("arguments")
+            if isinstance(arguments, dict) and isinstance(arguments.get("decision_id"), str):
+                recorded_decisions.add(arguments["decision_id"])
+    missing_user_transitions = sorted(required_user_transitions - observed_user_transitions)
+    if missing_user_transitions:
+        raise ConfigError(f"workflow ledger lacks user confirmations: {', '.join(missing_user_transitions)}")
+    required_decisions = {
+        item.get("id")
+        for item in state.get("decisions", [])
+        if isinstance(item, dict)
+        and item.get("status") == "answered"
+        and item.get("source") == "user_decision"
+        and isinstance(item.get("id"), str)
+        and item.get("id").strip()
+    }
+    missing_decisions = sorted(required_decisions - recorded_decisions)
+    if missing_decisions:
+        raise ConfigError(f"answered decisions lack signed record-decision approvals: {', '.join(missing_decisions)}")
+    business_artifact = state.get("business_artifact")
+    if not isinstance(business_artifact, str) or not business_artifact.strip() or not safe_relative(root, business_artifact).is_file():
+        raise ConfigError("workflow ledger business_artifact must point to an existing file")
+
+    records: dict[str, dict[str, Any]] = {}
+    for filename in ("ui-system.yaml", "ui-practices.yaml", "ui-plan.yaml"):
+        record = load_yaml_record(ddd / filename, filename)
+        if record.get("schema_version") != "1":
+            raise ConfigError(f"{filename} schema_version must be \"1\"")
+        if record.get("status") != "confirmed":
+            raise ConfigError(f"{filename} must have status: confirmed")
+        if record.get("profile") != profile_id or str(record.get("profile_version")) != profile_version:
+            raise ConfigError(f"{filename} profile does not match scaffold profile")
+        decisions = record.get("decisions")
+        if not isinstance(decisions, list) or not any(
+            isinstance(item, dict)
+            and item.get("source") == "user_decision"
+            and isinstance(item.get("evidence"), str)
+            and item["evidence"].strip()
+            for item in decisions
+        ):
+            raise ConfigError(f"{filename} needs a user_decision with evidence")
+        records[filename] = record
+    ui_plan = records["ui-plan.yaml"]
+    if ui_plan.get("active_slice") != active_slice["id"]:
+        raise ConfigError("ui-plan active_slice does not match workflow active_slice")
 
 
 def list_generators(profile_id: str, profile: dict[str, Any]) -> dict[str, Any]:
@@ -152,29 +642,79 @@ def list_generators(profile_id: str, profile: dict[str, Any]) -> dict[str, Any]:
         for generator_id, generator in generators.items():
             if not isinstance(generator, dict):
                 raise ConfigError(f"generator {kind}:{generator_id} must be an object")
-            rows.append({
+            row = {
                 "kind": kind,
                 "id": generator_id,
                 "description": generator.get("description", ""),
                 "public_seam": generator.get("public_seam"),
-            })
+            }
+            if kind == "template":
+                source = generator.get("source") or {}
+                sources = generator.get("sources") or []
+                row.update({
+                    "status": generator.get("status"),
+                    "version": generator.get("version"),
+                    "source_kind": source.get("kind") if source else None,
+                    "source_kinds": [item.get("kind") for item in sources] if sources else [],
+                })
+            rows.append(row)
     return {"ok": True, "profile": profile_id, "profile_version": profile["version"], "generators": rows}
 
 
+def validate_generators(
+    profile: dict[str, Any],
+    profile_id: str,
+    root: Path | None = None,
+    trusted_public_key: str | None = None,
+) -> None:
+    for kind, generators in profile["generators"].items():
+        if not isinstance(generators, dict):
+            raise ConfigError(f"generators.{kind} must be an object")
+        for generator_id in generators:
+            generator = resolve_generator(
+                profile,
+                kind,
+                generator_id,
+                root=root,
+                profile_id=profile_id,
+                trusted_public_key=trusted_public_key,
+            )
+            if root is not None:
+                for item in generator["files"]:
+                    if isinstance(item.get("template_file"), str):
+                        template_text(item, root)
+
+
 def build_plan(args: argparse.Namespace, config_path: Path, profile_id: str, profile: dict[str, Any]) -> dict[str, Any]:
-    generator = resolve_generator(profile, args.kind, args.generator)
+    root = project_root(config_path, args.root)
+    generator = resolve_generator(
+        profile,
+        args.kind,
+        args.generator,
+        root=root,
+        profile_id=profile_id,
+        trusted_public_key=args.trusted_public_key,
+    )
+    if managed_project_config(config_path, root):
+        state = load_json_record(root / ".ddd" / "workflow-state.json", "workflow ledger")
+        active_slice = state.get("active_slice")
+        if not isinstance(active_slice, dict) or not isinstance(active_slice.get("id"), str):
+            raise ConfigError("workflow ledger active_slice must contain an id")
+        if args.slice_id != active_slice["id"]:
+            raise ConfigError(f"--slice-id must equal the approved active slice: {active_slice['id']}")
     context = names(args.name)
     context.update({
         "slice_id": args.slice_id or "",
         "profile_id": profile_id,
         "target": args.target,
     })
-    root = project_root(config_path, args.root)
     target = safe_relative(root, args.target)
+    safe_generated_output(root, target)
     actions = []
     for item in generator["files"]:
         relative_path = render(item["path"], context)
         output = safe_relative(target, relative_path)
+        safe_generated_output(root, output)
         content = render(template_text(item, root), context)
         exists = output.exists()
         action = "overwrite" if exists and args.force else "skip" if exists else "create"
@@ -184,28 +724,102 @@ def build_plan(args: argparse.Namespace, config_path: Path, profile_id: str, pro
             "bytes": len(content.encode("utf-8")),
             "content": content,
         })
-    return {
+    contract = {
+        "description": generator.get("description", ""),
+        "required_components": generator.get("required_components", []),
+        "public_seam": generator.get("public_seam"),
+        "review_checks": generator.get("review_checks", []),
+    }
+    if args.kind == "template":
+        contract.update({
+            "source": generator.get("source"),
+            "sources": generator.get("sources", []),
+            "record": generator.get("record"),
+            "confirmation": generator.get("confirmation"),
+            "mapping": generator.get("mapping"),
+            "slots": generator.get("slots", []),
+            "variables": generator.get("variables", []),
+            "public_seams": generator.get("public_seams", []),
+        })
+    plan = {
         "ok": True,
         "profile": profile_id,
         "profile_version": profile["version"],
         "generator": f"{args.kind}:{args.generator}",
         "name": args.name,
         "target": str(target.relative_to(root)).replace("\\", "/") or ".",
-        "contract": {
-            "description": generator.get("description", ""),
-            "required_components": generator.get("required_components", []),
-            "public_seam": generator.get("public_seam"),
-            "review_checks": generator.get("review_checks", []),
-        },
+        "contract": contract,
         "actions": actions,
         "root": str(root),
     }
+    plan["approval"] = {
+        "action": "scaffold:apply",
+        "arguments": scaffold_approval_arguments(plan, profile_id, profile, args),
+    }
+    plan["approval"]["arguments"]["plan_digest"] = plan_digest(plan)
+    return plan
+
+
+def plan_digest(plan: dict[str, Any]) -> str:
+    value = dict(plan)
+    value.pop("root", None)
+    value.pop("approval", None)
+    return digest_json(value)
+
+
+def scaffold_approval_arguments(
+    plan: dict[str, Any],
+    profile_id: str,
+    profile: dict[str, Any],
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    return {
+        "profile_id": profile_id,
+        "profile_version": str(profile["version"]),
+        "generator": plan["generator"],
+        "name": args.name,
+        "target": args.target,
+        "slice_id": args.slice_id or "",
+        "force": bool(args.force),
+    }
+
+
+def verify_scaffold_approval(
+    args: argparse.Namespace,
+    plan: dict[str, Any],
+    root: Path,
+    config_path: Path,
+    trusted_public_key: str | None,
+) -> dict[str, Any]:
+    approval_path = (args.approval or "").strip()
+    if not approval_path:
+        raise ConfigError("managed scaffold apply requires a signed scaffold:apply approval")
+    if not trusted_public_key:
+        raise ConfigError("managed scaffold apply requires --trusted-public-key")
+    state_path = root / ".ddd" / "workflow-state.json"
+    expected = dict(plan["approval"]["arguments"])
+    expected["plan_digest"] = plan_digest(plan)
+    try:
+        record_ref = config_path.resolve().relative_to(root.resolve()).as_posix()
+        return verify_credential(
+            state_path,
+            safe_relative(root, approval_path),
+            trusted_public_key,
+            expected_action="scaffold:apply",
+            expected_arguments=expected,
+            expected_records=[record_ref],
+        )
+    except (ApprovalError, ValueError) as exc:
+        raise ConfigError(f"scaffold apply approval is invalid: {exc}") from exc
 
 
 def apply_plan(plan: dict[str, Any], root: Path, force: bool) -> dict[str, Any]:
     applied = []
     for action in plan["actions"]:
-        output = root / action["path"]
+        # Re-resolve at apply time. A plan may have been displayed for a
+        # while; a replaced symlink/reparse point must not redirect the write.
+        output = safe_relative(root, action["path"])
+        safe_generated_output(root, output)
         if action["action"] == "skip":
             applied.append({"path": action["path"], "action": "skip"})
             continue
@@ -226,12 +840,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", type=Path, default=Path(".ddd/scaffold.yaml"))
     parser.add_argument("--profile")
     parser.add_argument("--root")
+    parser.add_argument("--trusted-public-key")
     sub = parser.add_subparsers(dest="command", required=True)
 
     def add_common(subparser: argparse.ArgumentParser) -> None:
         subparser.add_argument("--config", type=Path, default=argparse.SUPPRESS)
         subparser.add_argument("--profile", default=argparse.SUPPRESS)
         subparser.add_argument("--root", default=argparse.SUPPRESS)
+        subparser.add_argument("--trusted-public-key", default=argparse.SUPPRESS)
 
     list_parser = sub.add_parser("list")
     add_common(list_parser)
@@ -248,6 +864,7 @@ def build_parser() -> argparse.ArgumentParser:
     generate.add_argument("--slice-id")
     generate.add_argument("--apply", action="store_true")
     generate.add_argument("--force", action="store_true")
+    generate.add_argument("--approval")
 
     check_parser = sub.add_parser("check")
     add_common(check_parser)
@@ -260,17 +877,29 @@ def main() -> int:
         config_path = args.config.resolve()
         config = load_yaml(config_path)
         profile_id, profile = choose_profile(config, args.profile)
+        root = project_root(config_path, getattr(args, "root", None))
+        managed_project = managed_project_config(config_path, root)
+        validate_project_gate(root, profile_id, str(profile["version"]), managed_project, args.trusted_public_key)
         if args.command == "list":
+            validate_generators(profile, profile_id, root, args.trusted_public_key)
             emit(list_generators(profile_id, profile))
             return 0
         if args.command == "check":
+            validate_generators(profile, profile_id, root, args.trusted_public_key)
             emit(list_generators(profile_id, profile))
             return 0
         if args.command == "describe":
             if ":" not in args.target:
                 raise ConfigError("describe target must be kind:generator-id")
             kind, generator_id = args.target.split(":", 1)
-            generator = resolve_generator(profile, kind, generator_id)
+            generator = resolve_generator(
+                profile,
+                kind,
+                generator_id,
+                root=root,
+                profile_id=profile_id,
+                trusted_public_key=args.trusted_public_key,
+            )
             emit({"ok": True, "profile": profile_id, "profile_version": profile["version"], "generator": f"{kind}:{generator_id}", "definition": generator})
             return 0
         if args.force and not args.apply:
@@ -280,10 +909,19 @@ def main() -> int:
             result = dict(plan)
             result.pop("root", None)
             result["mode"] = "dry-run"
-            for action in result["actions"]:
-                action.pop("content", None)
             emit(result)
             return 0
+        if managed_project:
+            approval = verify_scaffold_approval(args, plan, root, config_path, args.trusted_public_key)
+            state_path = root / ".ddd" / "workflow-state.json"
+            state_digest = digest_file(state_path)
+            consume_approval(
+                state_path,
+                approval,
+                args.trusted_public_key,
+                pre_state_digest=state_digest,
+                post_state_digest=state_digest,
+            )
         emit(apply_plan(plan, Path(plan["root"]), args.force))
         return 0
     except (ConfigError, OSError) as exc:
