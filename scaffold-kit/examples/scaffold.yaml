@@ -1,5 +1,53 @@
 schema_version: "1"
 default_profile: react-antd-pro
+backend_generators: &rust_axum_backend_generators
+  backend:
+    service:
+      surface: backend
+      requires_ui: false
+      requires_database: false
+      description: "Axum route seam with no database implementation"
+      public_seam: "{{pascal_name}}Router"
+      review_checks: [backend-route-seam, cargo-check, no-speculative-storage]
+      validation_commands:
+        format: cargo fmt --all -- --check
+        check: cargo check --workspace --all-targets
+        lint: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        test: cargo test --workspace
+        audit: cargo audit
+      files:
+        - path: "{{kebab_name}}/mod.rs"
+          template: |
+            //! {{pascal_name}} backend seam for slice {{slice_id}}.
+            use axum::{routing::get, Router};
+
+            pub fn router() -> Router {
+                Router::new().route("/{{kebab_name}}", get(health))
+            }
+
+            async fn health() -> &'static str {
+                "ok"
+            }
+    repository:
+      surface: backend
+      requires_ui: false
+      requires_database: true
+      description: "Database seam that stops before choosing SQL"
+      public_seam: "{{pascal_name}}Repository"
+      review_checks: [backend-repository-seam, database-profile, cargo-check]
+      validation_commands:
+        format: cargo fmt --all -- --check
+        check: cargo check --workspace --all-targets
+        lint: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        test: cargo test --workspace
+        audit: cargo audit
+      files:
+        - path: "{{kebab_name}}/repository.rs"
+          template: |
+            //! {{pascal_name}} repository seam for slice {{slice_id}}.
+            //! SQL and migration details remain behind the selected adapter profile.
+
+            pub trait {{pascal_name}}Repository: Send + Sync {}
 profiles:
   react-antd-pro:
     version: "1"
@@ -26,3 +74,15 @@ profiles:
                     />
                   );
                 }
+  rust-axum-sqlx:
+    version: "1"
+    surface: backend
+    generators: *rust_axum_backend_generators
+  rust-axum-tokio-postgres:
+    version: "1"
+    surface: backend
+    generators: *rust_axum_backend_generators
+  rust-axum-toasty:
+    version: "1"
+    surface: backend
+    generators: *rust_axum_backend_generators

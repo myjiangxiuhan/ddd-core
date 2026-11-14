@@ -34,6 +34,32 @@ profiles:
                 }
 ```
 
+The same `generators` map may contain a `backend` kind. Backend generators use the selected backend adapter profile and do not require UI records. Each backend generator declares `surface: backend`, `requires_ui: false`, an explicit `requires_database` boolean, a public seam, review checks, Cargo validation commands, and files. A `requires_database: true` generator is blocked until the signed database profile record is selected. It may create a seam, but it may not silently pick a query layer or generate SQL outside the selected profile.
+
+```yaml
+profiles:
+  rust-axum-sqlx:
+    version: "1"
+    surface: backend
+    generators:
+      backend:
+        service:
+          surface: backend
+          requires_ui: false
+          requires_database: false
+          public_seam: "FileEntryRouter"
+          review_checks: [backend-route-seam, cargo-check]
+          validation_commands:
+            format: cargo fmt --all -- --check
+            check: cargo check --workspace --all-targets
+            lint: cargo clippy --workspace --all-targets --all-features -- -D warnings
+            test: cargo test --workspace
+            audit: cargo audit
+          files:
+            - path: "{{kebab_name}}/mod.rs"
+              template: "pub fn router() {}"
+```
+
 The same `generators` map may contain a `template` kind. A template is a confirmed, project-owned clean-room pattern registered by `$template-kit`; it is still generated through the same dry-run and explicit apply boundary:
 
 ```yaml
@@ -85,10 +111,10 @@ The same `generators` map may contain a `template` kind. A template is a confirm
             .ddd/template-sources/admin-shell.md: "<sha256-of-source-evidence>"
 ```
 
-Required profile fields are `version` and `generators`. Each generator file needs `path` and exactly one of `template` or `template_file`. Supported placeholders are `name`, `pascal_name`, `camel_name`, `kebab_name`, `slice_id`, `profile_id`, and `target`. Unknown placeholders are errors.
+Required profile fields are `version` and `generators`. A backend profile also declares `surface: backend`; a UI profile remains the default surface when omitted. Each generator file needs `path` and exactly one of `template` or `template_file`. Supported placeholders are `name`, `pascal_name`, `camel_name`, `kebab_name`, `slice_id`, `profile_id`, and `target`. Unknown placeholders are errors.
 
 Template generators additionally require `status: confirmed`, a version, a `record` path to the confirmed `.ddd/templates/<template-id>.yaml`, and a separate signed `template:confirm` user approval credential, plus one `source` or a `sources` array with provenance (`kind`, locator, ref, license, attribution, evidence, and `pattern_only` or explicitly licensed-copy extraction), UI-system and UI-practice mappings, theme roles, layout regions, target primitives, an adaptation map, slots or public seams, variables, review checks, a `file_digests` map for every `template_file`, and a `source_evidence_digests` map for every provenance note. The generator verifies the credential with an external trusted public key, compares the registration with the record, current template-file digests, and source-evidence digests, and never downloads or executes any source project.
 
 Generator ids are stable names, not free-form code. A project may add `page`, `feature`, `hook`, `adapter`, or another kind, but each kind must still declare its output files and contract. The generated target is joined to the repository root and must remain inside it. A generator may not write anywhere under `.ddd`, including the workflow ledger, approvals, scaffold configuration, or template records. Templates cannot execute commands or refer to environment variables.
 
-The optional `required_components`, `public_seam`, `review_checks`, and `description` fields are carried into the dry-run and code-review report. Template fields such as `record`, `confirmation`, `source`/`sources`, `mapping`, `slots`, `variables`, `file_digests`, and `source_evidence_digests` are carried into the dry-run as provenance and contract evidence. A managed `--apply` additionally requires a signed `scaffold:apply` credential whose arguments include the exact profile, generator, name, target, force flag, and dry-run plan digest; its request must digest `.ddd/scaffold.yaml`. These approvals do not replace the user's UI plan or domain approval.
+The optional `required_components`, `public_seam`, `review_checks`, and `description` fields are carried into the dry-run and code-review report. Backend fields `surface`, `requires_ui`, `requires_database`, and `validation_commands` are carried into the dry-run as implementation boundaries. Template fields such as `record`, `confirmation`, `source`/`sources`, `mapping`, `slots`, `variables`, `file_digests`, and `source_evidence_digests` are carried into the dry-run as provenance and contract evidence. A managed `--apply` additionally requires a signed `scaffold:apply` credential whose arguments include the exact profile, generator, name, target, force flag, and dry-run plan digest; its request must digest `.ddd/scaffold.yaml`. These approvals do not replace the user's UI plan, backend profile, or domain approval.

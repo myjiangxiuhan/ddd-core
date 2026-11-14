@@ -1,21 +1,27 @@
 ---
 name: scaffold-kit
-description: Inspect and generate one approved UI, feature, or confirmed clean-room template artifact from a project-configured scaffold profile with a dry-run and explicit apply step.
+description: Inspect and generate one approved UI, backend, feature, or confirmed clean-room template artifact from a project-configured scaffold profile with a dry-run and explicit apply step.
 ---
 
 # scaffold-kit
 
-This is a user-invoked generator entrypoint inspired by Angular's `ng generate`: the project owns the generator names, templates, naming rules, and output boundary. The skill does not decide which component, page, or template to create; it renders the already-confirmed UI plan, UI system, practice profile, and selected technology profile. `$template-kit` is the separate authoring and extraction workflow.
+This is a user-invoked generator entrypoint inspired by Angular's `ng generate`: the project owns the generator names, templates, naming rules, and output boundary. The skill does not decide which component, page, backend seam, or template to create. It renders the already-confirmed UI records for a UI generator, or the selected backend adapter profile and active slice for a backend generator. `$template-kit` is the separate authoring and extraction workflow.
 
 ## Preconditions
 
-Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), the active slice, confirmed `.ddd/ui-system.yaml`, confirmed `.ddd/ui-practices.yaml`, `.ddd/ui-plan.yaml`, and [configuration rules](references/configuration.md). Before planning a generation, run:
+Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), the active slice, the selected adapter profile, and [configuration rules](references/configuration.md). A UI generator additionally reads confirmed `.ddd/ui-system.yaml`, `.ddd/ui-practices.yaml`, and `.ddd/ui-plan.yaml`. Before planning a UI generation, run:
 
 ```text
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require scaffold
 ```
 
-The ledger must show a confirmed active slice, a selected technology profile, `ui_system: confirmed`, `ui_practices: confirmed`, `ui_design: confirmed`, and `delivery: not_started`. If the UI system, practice profile, or UI plan is still a draft, return to its explicit planning skill; do not fill in the component boundary from code-generation defaults.
+The ledger must show a confirmed active slice, a selected technology profile, `ui_system: confirmed`, `ui_practices: confirmed`, `ui_design: confirmed`, and `delivery: not_started` for a UI generator. A backend generator uses the separate read-only check:
+
+```text
+python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require scaffold-backend
+```
+
+That check keeps domain, slice, technology, phase, delivery, signed decision, and active-slice constraints while leaving UI records optional. A draft UI plan still blocks the backend generator. The backend profile must declare `surface: backend`, `scaffold.requires_ui: false`, and a configured `backend` generator.
 
 ## Command shape
 
@@ -29,6 +35,8 @@ python scaffold-kit/scripts/scaffold.py generate component file-entry-table --na
 python scaffold-kit/scripts/scaffold.py generate component file-entry-table --name FileEntryTable --target src/features/files --config .ddd/scaffold.yaml --apply --approval .ddd/approvals/credentials/scaffold-apply.json --trusted-public-key <trusted-public-key-outside-project>
 python scaffold-kit/scripts/scaffold.py describe template:admin-shell --config .ddd/scaffold.yaml
 python scaffold-kit/scripts/scaffold.py generate template admin-shell --name AdminShell --slice-id <approved-slice-id> --target src/app/shell --config .ddd/scaffold.yaml --trusted-public-key <trusted-public-key-outside-project>
+python scaffold-kit/scripts/scaffold.py list --profile rust-axum-sqlx --config .ddd/scaffold.yaml --trusted-public-key <trusted-public-key-outside-project>
+python scaffold-kit/scripts/scaffold.py generate backend service --profile rust-axum-sqlx --name FileEntry --slice-id <approved-slice-id> --target src/features/files --config .ddd/scaffold.yaml --trusted-public-key <trusted-public-key-outside-project>
 ```
 
 The first `generate` command only prints the plan. Its output includes the exact `scaffold:apply` arguments and plan digest. For a managed project, the user must review that dry-run, create and sign a `scaffold:apply` request over `.ddd/scaffold.yaml` and the displayed plan digest, then pass the credential with `--apply`; the verifier consumes it in the fixed trust path's append-only receipt chain before writing files. Existing files are skipped unless the user also passes `--force`; no command in a scaffold profile may delete files, install packages, run a shell, or alter the workflow ledger.
@@ -39,11 +47,11 @@ Use `list`, `describe`, and `check` before `generate`. A generator must name its
 
 ## Process
 
-1. Verify the ledger and the exact active slice. Confirm that the requested generator kind and name appear in `.ddd/ui-plan.yaml` or are explicitly approved in the current user action. A `template` generator must also be confirmed by `$template-kit`.
-2. Validate `.ddd/scaffold.yaml` against [the schema](references/configuration.md), including profile id/version, template provenance, and template paths. Resolve templates within the repository; reject paths that escape the repository root.
-3. Render a dry-run plan showing profile, generator, target, output paths, create/skip/overwrite actions, and the component/library contract. Stop if the plan conflicts with the UI plan.
+1. Verify the ledger and the exact active slice. Confirm that a UI generator and name appear in `.ddd/ui-plan.yaml` or are explicitly approved in the current user action. A backend generator must be an explicit `backend` kind and must match the selected backend profile; it does not invent a UI record. A `template` generator must also be confirmed by `$template-kit`.
+2. Validate `.ddd/scaffold.yaml` against [the schema](references/configuration.md), including profile id/version, backend surface, validation commands, template provenance, and template paths. Resolve templates within the repository; reject paths that escape the repository root.
+3. Render a dry-run plan showing profile, generator, surface, target, output paths, create/skip/overwrite actions, and the UI or backend contract. Stop if a UI plan or database-profile requirement conflicts with the generator.
 4. When the user explicitly adds `--apply`, write only the listed files. Preserve existing files by default and report every action. Do not run a second skill or start delivery automatically.
-5. Return the generated file list, the exact template/profile versions, the UI system and practice records consumed, the dry-run or apply mode, and the next explicit user action. `$delivery-loop` remains a later invocation.
+5. Return the generated file list, the exact template/profile versions, the UI system and practice records consumed when applicable, the backend adapter and Cargo contract when applicable, the dry-run or apply mode, and the next explicit user action. `$delivery-loop` remains a later invocation.
 
 ## Output contract
 
@@ -51,7 +59,7 @@ Return `profile`, `profile_version`, `generator`, `name`, `target`, `mode`, each
 
 ## Hard stops
 
-- Do not generate without `ui_system: confirmed`, `ui_practices: confirmed`, `ui_design: confirmed`, a selected profile, and an exact active slice. Direct calls to `scaffold.py` must be subject to the same project guard when the target has a `.ddd` directory.
+- Do not generate a UI artifact without `ui_system: confirmed`, `ui_practices: confirmed`, `ui_design: confirmed`, a selected profile, and an exact active slice. A backend artifact uses `--require scaffold-backend`, a selected backend profile, an exact active slice, and the same signed domain and delivery preconditions. Direct calls to `scaffold.py` must be subject to the matching project guard when the target has a `.ddd` directory.
 - Do not run a managed project without `--trusted-public-key` and a provisioned fixed trust path. `DDD_APPROVAL_TRUST_MANIFEST` is forbidden. The CLI key is only a path assertion; the fixed manifest pins its fingerprint, append-only receipt log, and receipt anchor. A mutable ledger, template record, or project public key cannot manufacture a user approval.
 - Do not invent a component because a page is long or because the framework has a generator with a similar name.
 - Do not overwrite or delete files unless the user explicitly supplies `--force` with `--apply`.

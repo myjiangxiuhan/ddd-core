@@ -20,7 +20,7 @@ This repository defines a deliberately user-gated DDD workflow. The entrypoint s
 - `ui-system`: define and confirm project tokens, themes, responsive layout, accessibility, and visual-state rules; do not implement them.
 - `ui-practices`: collect version-pinned React, Vue, Angular, and UI-library guidance and confirm component-first practices; do not implement them.
 - `ui-architecture`: collect primary-source UI-library evidence and confirm one component composition plan for a UI slice.
-- `scaffold-kit`: inspect and explicitly apply one project-configured, `ng generate`-style artifact generator.
+- `scaffold-kit`: inspect and explicitly apply one project-configured, `ng generate`-style UI or backend artifact generator; UI and backend use separate gate checks.
 - `template-kit`: inspect pinned references and create or extract confirmed clean-room UI templates with provenance; do not copy source code.
 - `delivery-loop`: after the required profile, contract, and (for database-backed slices) baseline-attestation gates, implement and verify one active slice, then stop.
 - `repair-loop`: reproduce, fix, and regression-test one confirmed failure, then stop.

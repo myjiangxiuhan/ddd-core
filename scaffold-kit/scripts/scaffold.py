@@ -141,12 +141,13 @@ def resolve_generator(
     generator = generators.get(generator_id)
     if not isinstance(generator, dict):
         raise ConfigError(f"generator not found: {kind}:{generator_id}")
+    validate_generator_surface(generator, kind, generator_id)
     if kind == "template":
         validate_template(generator, generator_id)
         if root is not None:
             if not isinstance(profile_id, str) or not profile_id.strip():
                 raise ConfigError("profile id is required to validate a project template registration")
-            validate_project_gate(root, profile_id, str(profile.get("version")), True, trusted_public_key)
+            validate_project_gate(root, profile_id, str(profile.get("version")), True, trusted_public_key, requires_ui=True)
             validate_template_registration(
                 generator,
                 generator_id,
@@ -166,6 +167,45 @@ def resolve_generator(
         if has_template == has_template_file:
             raise ConfigError(f"generator {kind}:{generator_id} file {index} needs exactly one template source")
     return generator
+
+
+def validate_generator_surface(generator: dict[str, Any], kind: str, generator_id: str) -> None:
+    surface = generator.get("surface", "backend" if kind in {"backend", "service", "repository"} else "ui")
+    if surface not in {"ui", "backend"}:
+        raise ConfigError(f"generator {kind}:{generator_id} surface must be ui or backend")
+    requires_ui = generator.get("requires_ui", surface == "ui")
+    if not isinstance(requires_ui, bool):
+        raise ConfigError(f"generator {kind}:{generator_id} requires_ui must be boolean")
+    if surface == "backend" and requires_ui:
+        raise ConfigError(f"backend generator {kind}:{generator_id} cannot require UI records")
+    requires_database = generator.get("requires_database", False)
+    if not isinstance(requires_database, bool):
+        raise ConfigError(f"generator {kind}:{generator_id} requires_database must be boolean")
+
+
+def required_gate_fields(requires_ui: bool) -> dict[str, str]:
+    fields = {
+        "business_discovery": "confirmed",
+        "domain_design": "confirmed",
+        "slice_approval": "approved",
+        "technology_profile": "selected",
+        "delivery": "not_started",
+    }
+    if requires_ui:
+        fields.update({
+            "ui_system": "confirmed",
+            "ui_practices": "confirmed",
+            "ui_design": "confirmed",
+        })
+    return fields
+
+
+def require_backend_database_gate(gates: dict[str, Any], state: dict[str, Any]) -> None:
+    if gates.get("database_profile") != "selected":
+        raise ConfigError("database_profile must be selected before a database backend scaffold")
+    database_record = state.get("database_profile")
+    if not isinstance(database_record, dict) or not database_record.get("id") or not database_record.get("digest"):
+        raise ConfigError("database_profile must contain the signed id and digest before backend scaffold")
 
 
 def template_sources(template: dict[str, Any]) -> list[Any]:
@@ -485,6 +525,9 @@ def validate_project_gate(
     profile_version: str,
     managed_project: bool,
     trusted_public_key: str | None = None,
+    *,
+    requires_ui: bool = True,
+    requires_database: bool = False,
 ) -> None:
     if not managed_project:
         return
@@ -501,21 +544,16 @@ def validate_project_gate(
     gates = state.get("gates")
     if not isinstance(gates, dict):
         raise ConfigError("workflow ledger gates must be an object")
-    required_gates = {
-        "business_discovery": "confirmed",
-        "domain_design": "confirmed",
-        "slice_approval": "approved",
-        "technology_profile": "selected",
-        "ui_system": "confirmed",
-        "ui_practices": "confirmed",
-        "ui_design": "confirmed",
-        "delivery": "not_started",
-    }
+    required_gates = required_gate_fields(requires_ui)
     for field, expected in required_gates.items():
         if gates.get(field) != expected:
             raise ConfigError(f"workflow gate {field} must be {expected}")
     if gates.get("phase") != "delivery":
         raise ConfigError("workflow gate phase must be delivery")
+    if not requires_ui and gates.get("ui_design", "not_started") == "draft":
+        raise ConfigError("a draft ui_design must be confirmed or removed before backend scaffold")
+    if requires_database:
+        require_backend_database_gate(gates, state)
     decisions = state.get("decisions")
     if not isinstance(decisions, list) or not any(
         isinstance(item, dict)
@@ -540,10 +578,9 @@ def validate_project_gate(
         "confirm-design",
         "approve-slice",
         "select-profile",
-        "confirm-ui-system",
-        "confirm-ui-practices",
-        "confirm-ui",
     }
+    if requires_ui:
+        required_user_transitions.update({"confirm-ui-system", "confirm-ui-practices", "confirm-ui"})
     observed_user_transitions: set[str] = set()
     seen_request_ids: set[str] = set()
     recorded_decisions: set[str] = set()
@@ -611,6 +648,8 @@ def validate_project_gate(
         raise ConfigError("workflow ledger business_artifact must point to an existing file")
 
     records: dict[str, dict[str, Any]] = {}
+    if not requires_ui:
+        return
     for filename in ("ui-system.yaml", "ui-practices.yaml", "ui-plan.yaml"):
         record = load_yaml_record(ddd / filename, filename)
         if record.get("schema_version") != "1":
@@ -647,6 +686,9 @@ def list_generators(profile_id: str, profile: dict[str, Any]) -> dict[str, Any]:
                 "id": generator_id,
                 "description": generator.get("description", ""),
                 "public_seam": generator.get("public_seam"),
+                "surface": generator.get("surface", "backend" if kind in {"backend", "service", "repository"} else "ui"),
+                "requires_ui": generator.get("requires_ui"),
+                "requires_database": generator.get("requires_database", False),
             }
             if kind == "template":
                 source = generator.get("source") or {}
@@ -727,8 +769,12 @@ def build_plan(args: argparse.Namespace, config_path: Path, profile_id: str, pro
     contract = {
         "description": generator.get("description", ""),
         "required_components": generator.get("required_components", []),
-        "public_seam": generator.get("public_seam"),
+        "public_seam": render(generator["public_seam"], context) if isinstance(generator.get("public_seam"), str) else generator.get("public_seam"),
         "review_checks": generator.get("review_checks", []),
+        "surface": generator.get("surface", "backend" if args.kind in {"backend", "service", "repository"} else "ui"),
+        "requires_ui": generator.get("requires_ui"),
+        "requires_database": generator.get("requires_database", False),
+        "validation_commands": generator.get("validation_commands", {}),
     }
     if args.kind == "template":
         contract.update({
@@ -871,6 +917,28 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def gate_requirements(args: argparse.Namespace, profile: dict[str, Any]) -> tuple[bool, bool]:
+    """Return (requires_ui, requires_database) for the requested generator."""
+    profile_surface = profile.get("surface", "ui")
+    if args.command == "generate":
+        generator = resolve_generator(profile, args.kind, args.generator)
+        surface = generator.get("surface", "backend" if args.kind in {"backend", "service", "repository"} else "ui")
+        if surface != profile_surface:
+            raise ConfigError(f"generator surface {surface} does not match profile surface {profile_surface}")
+        return bool(generator.get("requires_ui", surface == "ui")), bool(generator.get("requires_database", False))
+    if args.command == "describe":
+        if ":" not in args.target:
+            raise ConfigError("describe target must be kind:generator-id")
+        kind, generator_id = args.target.split(":", 1)
+        generator = resolve_generator(profile, kind, generator_id)
+        surface = generator.get("surface", "backend" if kind in {"backend", "service", "repository"} else "ui")
+        if surface != profile_surface:
+            raise ConfigError(f"generator surface {surface} does not match profile surface {profile_surface}")
+        return bool(generator.get("requires_ui", surface == "ui")), bool(generator.get("requires_database", False))
+    surface = profile.get("surface", "ui")
+    return surface != "backend", False
+
+
 def main() -> int:
     args = build_parser().parse_args()
     try:
@@ -879,7 +947,16 @@ def main() -> int:
         profile_id, profile = choose_profile(config, args.profile)
         root = project_root(config_path, getattr(args, "root", None))
         managed_project = managed_project_config(config_path, root)
-        validate_project_gate(root, profile_id, str(profile["version"]), managed_project, args.trusted_public_key)
+        requires_ui, requires_database = gate_requirements(args, profile)
+        validate_project_gate(
+            root,
+            profile_id,
+            str(profile["version"]),
+            managed_project,
+            args.trusted_public_key,
+            requires_ui=requires_ui,
+            requires_database=requires_database,
+        )
         if args.command == "list":
             validate_generators(profile, profile_id, root, args.trusted_public_key)
             emit(list_generators(profile_id, profile))
