@@ -1,0 +1,26 @@
+{
+  "schema_version": "1",
+  "contract_id": "file-entry-crud-performance",
+  "slice_id": "file-entry-crud",
+  "profile": {"id": "go-echo-pgx", "version": "1"},
+  "database_profile": "postgresql-16",
+  "commit": "<commit-under-test>",
+  "dataset_digest": "<seed-and-fixture-digest>",
+  "dataset_rows": 100000,
+  "environment": {"database": "postgresql:16", "host": "isolated-benchmark"},
+  "warmup_seconds": 30,
+  "measurement_seconds": 60,
+  "scenarios": {
+    "list-root-entries": {
+      "concurrency": 20,
+      "p50_ms": 50,
+      "p95_ms": 150,
+      "p99_ms": 350,
+      "throughput_rps": 120,
+      "error_rate_percent": 0,
+      "db_cpu_percent": 42,
+      "db_connections": 12,
+      "plan_evidence": ".ddd/performance/plans/list-root-entries.json"
+    }
+  }
+}

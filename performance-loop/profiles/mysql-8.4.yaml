@@ -1,0 +1,46 @@
+schema_version: "1"
+id: mysql-8.4
+engine: mysql
+version: "8.4"
+profile_version: "1"
+identifier_quote: '`'
+parameter_style: question
+pagination_style: tuple
+capabilities:
+  upsert:
+    supported: true
+    syntax_or_api: "INSERT ... AS new ON DUPLICATE KEY UPDATE"
+    fallback_or_incompatibility: "Pin MySQL 8.4; affected-row behavior and aliases are version-sensitive."
+  returning:
+    supported: false
+    syntax_or_api: "No MySQL DML RETURNING in this profile"
+    fallback_or_incompatibility: "Use a deliberate follow-up read or change the profile; do not pretend it is atomic."
+  functional_indexes:
+    supported: true
+    syntax_or_api: "Functional key parts / generated columns"
+    fallback_or_incompatibility: "Verify the exact MySQL version and write cost."
+  keyset_pagination:
+    supported: true
+    syntax_or_api: "Stable ordered tuple predicate"
+    fallback_or_incompatibility: "The ordering must be unique and the composite index must match it."
+  plan:
+    supported: true
+    syntax_or_api: "EXPLAIN ANALYZE"
+    fallback_or_incompatibility: "Record whether the plan was estimated or actually executed."
+rules:
+  require_parameterized: true
+  forbid_select_star: true
+  preferred_pagination: keyset
+  large_dataset_offset: reject
+  max_batch_size: 500
+sql_generation:
+  list:
+    pagination: keyset
+    predicate_style: tuple
+    limit_style: limit_parameter
+    plan_command: "EXPLAIN ANALYZE {sql}"
+  upsert:
+    strategy: on_duplicate_key
+    conflict_reference: new
+    returning: unsupported
+    concurrency_required: false

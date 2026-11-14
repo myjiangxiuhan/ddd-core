@@ -1,0 +1,7 @@
+operation: upsert
+table: file_entries
+insert_columns: [owner_id, name, size_bytes]
+conflict_columns: [owner_id, name]
+update_columns: [size_bytes]
+returning_columns: [id, updated_at]
+concurrency_strategy: serializable

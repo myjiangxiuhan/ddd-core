@@ -1,0 +1,46 @@
+schema_version: "1"
+id: postgresql-16
+engine: postgresql
+version: "16"
+profile_version: "1"
+identifier_quote: '"'
+parameter_style: numbered_dollar
+pagination_style: tuple
+capabilities:
+  upsert:
+    supported: true
+    syntax_or_api: "INSERT ... ON CONFLICT ... DO UPDATE"
+    fallback_or_incompatibility: "Requires a conflict target and retry policy."
+  returning:
+    supported: true
+    syntax_or_api: RETURNING
+    fallback_or_incompatibility: "Bind the returned projection to the application seam."
+  partial_indexes:
+    supported: true
+    syntax_or_api: "CREATE INDEX ... WHERE ..."
+    fallback_or_incompatibility: "Predicate must match the workload and increases write maintenance."
+  keyset_pagination:
+    supported: true
+    syntax_or_api: "Stable ordered tuple predicate"
+    fallback_or_incompatibility: "The ordering must be unique and the composite index must match it."
+  plan:
+    supported: true
+    syntax_or_api: "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)"
+    fallback_or_incompatibility: "Use an isolated dataset or replica because ANALYZE executes the query."
+rules:
+  require_parameterized: true
+  forbid_select_star: true
+  preferred_pagination: keyset
+  large_dataset_offset: reject
+  max_batch_size: 1000
+sql_generation:
+  list:
+    pagination: keyset
+    predicate_style: tuple
+    limit_style: limit_parameter
+    plan_command: "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) {sql}"
+  upsert:
+    strategy: on_conflict
+    conflict_reference: EXCLUDED
+    returning: supported
+    concurrency_required: false

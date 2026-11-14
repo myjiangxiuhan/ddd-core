@@ -1,0 +1,19 @@
+operation: list
+table: file_entries
+columns: [id, name, kind, size_bytes, created_at]
+filters:
+  - column: owner_id
+    operator: "="
+  - column: parent_id
+    operator: "="
+  - column: deleted_at
+    operator: is_null
+order_by:
+  - column: created_at
+    direction: asc
+  - column: id
+    direction: asc
+pagination:
+  kind: keyset
+  cursor_columns: [created_at, id]
+  limit: 50

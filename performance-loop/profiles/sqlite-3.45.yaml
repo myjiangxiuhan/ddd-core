@@ -1,0 +1,46 @@
+schema_version: "1"
+id: sqlite-3.45
+engine: sqlite
+version: "3.45"
+profile_version: "1"
+identifier_quote: '"'
+parameter_style: question
+pagination_style: tuple
+capabilities:
+  upsert:
+    supported: true
+    syntax_or_api: "INSERT ... ON CONFLICT ... DO UPDATE"
+    fallback_or_incompatibility: "Pin the SQLite library and conflict target."
+  returning:
+    supported: true
+    syntax_or_api: RETURNING
+    fallback_or_incompatibility: "Requires SQLite 3.35 or newer and the deployed library must match."
+  partial_indexes:
+    supported: true
+    syntax_or_api: "CREATE INDEX ... WHERE ..."
+    fallback_or_incompatibility: "Planner and expression limitations must be tested with EXPLAIN QUERY PLAN."
+  keyset_pagination:
+    supported: true
+    syntax_or_api: "Stable ordered tuple predicate"
+    fallback_or_incompatibility: "The ordering must be unique and the composite index must match it."
+  plan:
+    supported: true
+    syntax_or_api: "EXPLAIN QUERY PLAN"
+    fallback_or_incompatibility: "Treat the single-writer constraint and journal mode as workload inputs."
+rules:
+  require_parameterized: true
+  forbid_select_star: true
+  preferred_pagination: keyset
+  large_dataset_offset: reject
+  max_batch_size: 250
+sql_generation:
+  list:
+    pagination: keyset
+    predicate_style: tuple
+    limit_style: limit_parameter
+    plan_command: "EXPLAIN QUERY PLAN {sql}"
+  upsert:
+    strategy: on_conflict
+    conflict_reference: excluded
+    returning: supported
+    concurrency_required: false

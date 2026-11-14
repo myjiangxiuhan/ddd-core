@@ -1,0 +1,68 @@
+schema_version: "1"
+id: file-entry-crud-performance
+status: draft
+slice_id: file-entry-crud
+seam: "HTTP application command for listing file entries"
+decisions:
+  - id: list-budget
+    source: agent_recommendation
+    question: "What is the first-release p95 and p99 budget for listing file entries?"
+    answer: "p95 <= 200 ms, p99 <= 500 ms"
+    evidence: "Example only; replace with a user decision and detached approval."
+profile:
+  id: go-echo-pgx
+  version: "1"
+  database:
+    adapter_profile: postgresql-16
+    engine: postgresql
+    version: "16"
+    driver: pgx
+    query_layer: sqlc
+workload:
+  dataset:
+    rows: 100000
+    tenants: 100
+    distribution: "Most parents have fewer than 100 children; a small number have 10000."
+  warmup_seconds: 30
+  measurement_seconds: 60
+  scenarios:
+    - id: list-root-entries
+      operation: read
+      concurrency: 20
+      target_rps: 100
+      budget:
+        p50_ms: 80
+        p95_ms: 200
+        p99_ms: 500
+        error_rate_percent: 0.1
+        db_cpu_percent: 70
+        db_connections: 20
+sql:
+  - id: list-root-entries-query
+    scenario_id: list-root-entries
+    operation: list
+    filters: [owner_id, parent_id, deleted_at]
+    joins: []
+    order: [created_at, id]
+    selected_columns: [id, name, kind, size_bytes, created_at]
+    pagination: keyset
+    index: idx_file_entries_owner_parent_deleted_created_id
+    access_path: index_range_scan
+    n_plus_one: false
+    batch_size: null
+    transaction: none
+    lock_scope: none
+    timeout_ms: 500
+    plan_evidence: .ddd/performance/plans/list-root-entries.json
+    database_mapping:
+      profile: postgresql-16
+      capabilities: [keyset_pagination, plan]
+      native_features:
+        - "PostgreSQL: composite index ordered for the keyset predicate"
+        - "PostgreSQL: EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) on an isolated dataset"
+      fallback_or_incompatibility: []
+      evidence:
+        - "PostgreSQL 16 query-plan capture on the isolated benchmark dataset"
+baseline:
+  status: pending
+  result: .ddd/performance/file-entry-crud.baseline.json
