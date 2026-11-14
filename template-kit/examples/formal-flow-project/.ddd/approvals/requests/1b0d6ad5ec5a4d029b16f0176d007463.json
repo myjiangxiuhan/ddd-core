@@ -1,0 +1,23 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "1b0d6ad5ec5a4d029b16f0176d007463",
+    "action": "workflow:record-decision",
+    "arguments": {
+      "transition": "record-decision",
+      "evidence": "Example fixture decision record.",
+      "decision_id": "template-boundary",
+      "answer": "Register only the AdminShell clean-room template; do not copy source implementation.",
+      "decision_digest": "e2ffe23566f37e441c0cb4edc56b4adc912a4f354a0d72ea59bf5b5b2afc0805"
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "8507654b628ebb2f76dc5da440254a822db539f4c744a0928da9519bcf5ec314",
+    "record_digests": {},
+    "issued_at": "2026-11-13T19:15:59Z",
+    "expires_at": "2026-12-13T19:15:59Z",
+    "nonce": "3acf94c46e434b1498052de19fd2add3"
+  }
+}

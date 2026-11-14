@@ -1,0 +1,185 @@
+schema_version: '1'
+default_profile: react-antd-pro
+profiles:
+  react-antd-pro:
+    version: '1'
+    aliases:
+      shell: template
+    generators:
+      template:
+        vben-ant-design-pro-admin-shell:
+          status: confirmed
+          version: '1'
+          description: Clean-room React + Ant Design Pro application shell adapted
+            from two pinned references
+          record: .ddd/templates/vben-ant-design-pro-admin-shell.yaml
+          required_components:
+          - ProLayout
+          - PageContainer
+          public_seam: AdminShell
+          sources:
+          - id: vben-admin-v5.7.0
+            kind: oss
+            locator: https://github.com/vbenjs/vue-vben-admin
+            ref: v5.7.0
+            license: MIT
+            attribution: Vben Admin is the source reference; preserve MIT attribution
+              if source code or assets are ever used.
+            evidence: .ddd/template-sources/vben-admin-v5.7.0.md
+            extraction: pattern_only
+          - id: ant-design-pro-v6.0.2
+            kind: oss
+            locator: https://github.com/ant-design/ant-design-pro
+            ref: v6.0.2
+            license: MIT
+            attribution: Ant Design Pro is the target-side source reference; preserve
+              MIT attribution if source code or assets are ever used.
+            evidence: .ddd/template-sources/ant-design-pro-v6.0.2.md
+            extraction: pattern_only
+          source_evidence_digests:
+            .ddd/template-sources/ant-design-pro-v6.0.2.md: bf7748c7829b46a4d064b96882baa9bfffdc8a5e3284801825a06c54d2752f2c
+            .ddd/template-sources/vben-admin-v5.7.0.md: f5215d4b27d0d9036d2995bf7199cf3197ab3cfd8699126e645261549e6f92a1
+          mapping:
+            ui_system: .ddd/ui-system.yaml
+            ui_practices: .ddd/ui-practices.yaml
+            theme_roles:
+            - surface
+            - surface-elevated
+            - surface-navigation
+            - surface-overlay
+            - text
+            - text-muted
+            - text-on-navigation
+            - border
+            - divider
+            - action-primary
+            - action-hover
+            - focus
+            - selected
+            - success
+            - warning
+            - danger
+            - info
+            - density
+            - content-padding
+            - sidebar-width
+            - header-height
+            - content-width
+            layout_regions:
+            - app-shell
+            - brand
+            - primary-navigation
+            - secondary-navigation
+            - header
+            - header-actions
+            - breadcrumb
+            - tabbar
+            - content
+            - content-overlay
+            - footer
+            - auxiliary
+            primitives:
+            - ProLayout
+            - PageContainer
+            - ProCard
+            - ProTable
+            - ProForm
+            - ProDescriptions
+            - ProSkeleton
+            - SettingDrawer
+            - Tabs
+            - ConfigProvider
+            - Dropdown
+            - Avatar
+            - Badge
+            - Drawer
+            - FooterToolbar
+            adaptation:
+              source_framework: vue
+              source_library: ant-design-vue + Vben core UI
+              target_framework: react
+              target_library: antd-pro
+              primitive_map:
+              - source: VbenAdminLayout
+                target: ProLayout
+                reason: Preserve shell regions and render seams while using the target
+                  layout primitive.
+              - source: LayoutContent
+                target: PageContainer/ProCard
+                reason: Keep page context and content grouping in target primitives.
+              - source: LayoutMenu/LayoutMixedMenu
+                target: ProLayout route/menu contract
+                reason: Route metadata remains the source of navigation and permission
+                  context.
+              - source: LayoutTabbar
+                target: Ant Design Tabs or a confirmed project tabbar seam
+                reason: Keep tab lifecycle as a seam; do not assume the source tab
+                  behavior is required.
+              - source: VbenLogo
+                target: ProLayout logo/brand render seam
+                reason: Use project brand and accessibility contract.
+              - source: LayoutHeader
+                target: ProLayout actionsRender/avatarProps/header seams
+                reason: Retain header action responsibilities with React render props.
+              - source: Preferences
+                target: SettingDrawer plus project preference contract
+                reason: Expose only confirmed project preferences.
+              - source: Notification/UserDropdown
+                target: Badge/Dropdown/Avatar/notification seams
+                reason: Reuse target interaction primitives and request/auth contracts.
+              - source: LayoutContentSpinner
+                target: ProSkeleton or project loading seam
+                reason: Keep loading feedback inside the target component system.
+              - source: LayoutFooter
+                target: ProLayout footerRender
+                reason: Keep footer ownership at the application shell boundary.
+              - source: Vben token roles
+                target: Ant Design ConfigProvider theme/token and project UI system
+                reason: Map semantic roles, never source color values.
+              - source: ProTable/ProForm/ProDescriptions
+                target: ProTable/ProForm/ProDescriptions
+                reason: Use target-first primitives for page-level business UI.
+              target_invariants:
+              - target_framework
+              - target_library
+              - project_tokens
+              - project_theme_roles
+              - route_and_permission_contract
+              - accessibility_contract
+              - clean_room_source_boundary
+          slots:
+          - brand
+          - headerActions
+          - userMenu
+          - notifications
+          - content
+          - footer
+          - auxiliary
+          public_seams:
+          - AdminShell
+          variables:
+          - name
+          - pascal_name
+          - kebab_name
+          - profile_id
+          - target
+          - route_tree
+          - theme_token_ref
+          review_checks:
+          - template-source-pinned
+          - template-clean-room
+          - target-library-invariant
+          - ui-theme-role
+          - ui-layout-region
+          - ui-component-first
+          - ui-primitive-first
+          - no-source-default-colors
+          confirmation:
+            status: confirmed
+            source: user_decision
+            evidence: .ddd/approvals/credentials/confirm-template.json
+          files:
+          - path: '{{kebab_name}}/index.tsx'
+            template_file: .ddd/templates/vben-ant-design-pro-admin-shell/admin-shell.tsx.template
+          file_digests:
+            .ddd/templates/vben-ant-design-pro-admin-shell/admin-shell.tsx.template: 8e94d0dc7efbc112b0425e732efca0b50f63b9eca5c4b0df928bd6b3986b48d1

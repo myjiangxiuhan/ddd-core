@@ -1,0 +1,40 @@
+schema_version: '1'
+status: confirmed
+active_slice: admin-shell-template
+profile: react-antd-pro
+profile_version: '1'
+ui_system: .ddd/ui-system.yaml
+ui_practices: .ddd/ui-practices.yaml
+template: .ddd/templates/vben-ant-design-pro-admin-shell.yaml
+boundaries:
+- id: admin-shell-page
+  kind: page
+  responsibility: compose the application shell and route context
+  state_owner: application shell
+  children:
+  - admin-shell-template
+  reason: Owns layout composition only; it does not own domain data.
+- id: admin-shell-template
+  kind: template
+  responsibility: provide the confirmed AdminShell public seam
+  state_owner: application shell
+  public_seam: AdminShell
+  primitive: ProLayout
+  reason: Use the registered clean-room template with target primitives and project
+    tokens.
+states:
+- loading
+- empty
+- error
+- ready
+non_goals:
+- feature CRUD behavior
+- business permissions
+- source implementation copying
+decisions:
+- id: template-source-boundary
+  question: Does the UI plan use source code from Vben or Ant Design Pro?
+  status: confirmed
+  source: user_decision
+  answer: No; it uses only the recorded pattern and target primitives.
+  evidence: .ddd/templates/vben-ant-design-pro-admin-shell.yaml

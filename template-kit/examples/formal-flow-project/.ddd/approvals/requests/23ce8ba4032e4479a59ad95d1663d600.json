@@ -1,0 +1,23 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "23ce8ba4032e4479a59ad95d1663d600",
+    "action": "workflow:confirm-mainline",
+    "arguments": {
+      "transition": "confirm-mainline",
+      "evidence": "Example fixture: confirm the mainline for the registration slice.",
+      "artifact": ".ddd/example-mainline.md"
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "5e753cffc700edcf4131343a490f85f9c5b93cafdb9e5e6ad1dfa287150587c0",
+    "record_digests": {
+      ".ddd/example-mainline.md": "94368f52dda4610a56bf916796a485d53b3f941d30003c01726ba975cd3cc582"
+    },
+    "issued_at": "2026-11-13T19:02:56Z",
+    "expires_at": "2026-12-13T19:02:56Z",
+    "nonce": "84db5c30c92c495ea9da390e1e98cdde"
+  }
+}

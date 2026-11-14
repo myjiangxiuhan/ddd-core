@@ -1,0 +1,6 @@
+interface:
+  display_name: "Template Kit"
+  short_description: "Extract and register clean-room UI templates"
+  default_prompt: "Use $template-kit to inspect a pinned reference, extract a reusable UI template, and validate it before scaffolding."
+policy:
+  allow_implicit_invocation: false

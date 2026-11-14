@@ -1,0 +1,95 @@
+schema_version: '1'
+status: confirmed
+profile: react-antd-pro
+profile_version: '1'
+framework: react
+framework_version: 19.2.5
+component_library: antd
+library_version: 6.4.3
+profile_component_library: '@ant-design/pro-components'
+profile_component_version: 3.1.12-0
+component_first:
+  order:
+  - library_primitive
+  - profile_component
+  - feature_component
+  - logic_primitive
+  - new_shared_component
+  wrapper_requires:
+  - responsibility
+  - owner
+  - public_seam
+  - reason
+  - evidence
+  - review_checks
+  second_consumer_required_for_shared: true
+framework_rules:
+- id: explicit-react-state
+  status: user_decision
+  rule: Keep the minimal complete UI state, derive values, and place shared state
+    at the nearest common owner.
+  evidence: https://react.dev/learn/choosing-the-state-structure
+- id: hook-for-repeated-logic
+  status: agent_recommendation
+  rule: Extract a Hook for repeated stateful logic; do not create a visual wrapper
+    for logic alone.
+  evidence: https://react.dev/learn/reusing-logic-with-custom-hooks
+state_and_data:
+  owner:
+    status: user_decision
+    value: the nearest component that owns the interaction
+  derived_state:
+    status: user_decision
+    value: derive from props, route, and request data
+  request_seam:
+    status: user_decision
+    value: feature adapter or query hook; visual primitives receive typed data
+  async_states:
+  - loading
+  - empty
+  - error
+  - ready
+accessibility_and_testing:
+  keyboard_and_focus:
+    status: user_decision
+    value: verify keyboard order and visible focus at public seams
+  semantics:
+    status: user_decision
+    value: prefer Ant Design/ProComponents semantics over hand-rolled controls
+  visual_regression:
+    status: agent_recommendation
+    value: add only when the project has a visual regression harness
+  public_seam_tests:
+    status: user_decision
+    value: test the AdminShell contract and its loading/error boundaries
+deviations: []
+sources:
+- id: react-state
+  kind: official
+  locator: https://react.dev/learn/choosing-the-state-structure
+  ref: current official guidance captured for this example
+  evidence: State ownership and derived state rule
+- id: pro-components
+  kind: official
+  locator: https://procomponents.ant.design/
+  ref: v6.0.2 source package context
+  evidence: Target profile component responsibilities
+- id: target-source-note
+  kind: oss
+  locator: https://github.com/ant-design/ant-design-pro
+  ref: v6.0.2
+  evidence: .ddd/template-sources/ant-design-pro-v6.0.2.md
+decisions:
+- id: primitive-first
+  question: Which component comes first for a visible concern?
+  status: confirmed
+  source: user_decision
+  answer: library primitive, then profile component, then feature component
+  evidence: example fixture decision
+- id: wrapper-policy
+  question: When may a shared wrapper be created?
+  status: confirmed
+  source: user_decision
+  answer: only with a named responsibility, owner, public seam, reason, evidence,
+    and review checks
+  evidence: example fixture decision

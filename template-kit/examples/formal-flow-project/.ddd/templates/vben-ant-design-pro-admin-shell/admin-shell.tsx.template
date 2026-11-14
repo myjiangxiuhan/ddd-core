@@ -1,0 +1,64 @@
+import type { ReactNode } from 'react';
+import type { ProLayoutProps } from '@ant-design/pro-components';
+import { PageContainer, ProLayout } from '@ant-design/pro-components';
+
+/**
+ * Clean-room application shell pattern.
+ *
+ * Vben contributes the region and slot questions; Ant Design Pro supplies the
+ * target primitives. Brand, tokens, route data, permissions and navigation
+ * choices stay outside this template so the target project remains authoritative.
+ */
+export type {{pascal_name}}Props = {
+  children: ReactNode;
+  route?: ProLayoutProps['route'];
+  location?: ProLayoutProps['location'];
+  layoutSettings?: Pick<
+    ProLayoutProps,
+    'layout' | 'contentWidth' | 'fixedHeader' | 'fixSiderbar' | 'splitMenus'
+  >;
+  brand?: ReactNode;
+  headerActions?: ReactNode;
+  userMenu?: ReactNode;
+  notifications?: ReactNode;
+  avatarProps?: ProLayoutProps['avatarProps'];
+  footer?: ReactNode;
+  auxiliary?: ReactNode;
+  onPageChange?: ProLayoutProps['onPageChange'];
+};
+
+export function {{pascal_name}}({
+  children,
+  route,
+  location,
+  layoutSettings,
+  brand,
+  headerActions,
+  userMenu,
+  notifications,
+  avatarProps,
+  footer,
+  auxiliary,
+  onPageChange,
+}: {{pascal_name}}Props) {
+  return (
+    <ProLayout
+      {...layoutSettings}
+      logo={brand}
+      route={route}
+      location={location}
+      avatarProps={avatarProps}
+      actionsRender={() => [notifications, headerActions, userMenu].filter(Boolean)}
+      footerRender={() => footer}
+      onPageChange={onPageChange}
+      childrenRender={(content) => (
+        <>
+          <PageContainer>{content}</PageContainer>
+          {auxiliary}
+        </>
+      )}
+    >
+      {children}
+    </ProLayout>
+  );
+}

@@ -1,0 +1,22 @@
+schema_version: "1"
+profile: react-antd-pro
+profile_version: "1"
+items:
+  - id: admin-shell-layout
+    concept: "application shell with route-driven navigation and named header/content seams"
+    library_component: ProLayout
+    source_url: "https://procomponents.ant.design/"
+    package_version: "3.1.12-0"
+    local_precedent: ".ddd/templates/vben-ant-design-pro-admin-shell.yaml"
+    fit: confirmed
+    reason: "The target primitive covers the shell responsibility while preserving project-owned seams."
+    evidence: ".ddd/template-sources/ant-design-pro-v6.0.2.md"
+  - id: page-context
+    concept: "page title, breadcrumb, and content context"
+    library_component: PageContainer
+    source_url: "https://procomponents.ant.design/components/page-container"
+    package_version: "3.1.12-0"
+    local_precedent: ".ddd/templates/vben-ant-design-pro-admin-shell.yaml"
+    fit: confirmed
+    reason: "The page context belongs to the target profile, not to copied source markup."
+    evidence: ".ddd/template-sources/ant-design-pro-v6.0.2.md"

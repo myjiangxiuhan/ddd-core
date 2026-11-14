@@ -1,0 +1,23 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "27c48813ad51437d97e12e809f69570d",
+    "action": "workflow:record-decision",
+    "arguments": {
+      "transition": "record-decision",
+      "evidence": "Example fixture decision record.",
+      "decision_id": "example-purpose",
+      "answer": "Prove provenance, UI foundation gates, and a clean-room scaffold dry-run.",
+      "decision_digest": "327f70905827b7097cfebd33f2243a1959dd6dec59b9aa6b00bef5dc2bc78409"
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "52ad89379e0085cecc843503d5e755997a7b0e407939a199db3c4541dfb72632",
+    "record_digests": {},
+    "issued_at": "2026-11-13T19:15:59Z",
+    "expires_at": "2026-12-13T19:15:59Z",
+    "nonce": "e8aeac66dbe741eca5182734b1ab291c"
+  }
+}

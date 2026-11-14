@@ -1,0 +1,22 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "d4ecb451714d43b5968fac0ef1f98f7a",
+    "action": "workflow:confirm-ui-practices",
+    "arguments": {
+      "transition": "confirm-ui-practices",
+      "evidence": "Example fixture: confirm the component-first practice record."
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "df78e297069bc0b5385844f1cecb84b245a0a70391309f6b4f4d9dda0a26b784",
+    "record_digests": {
+      ".ddd/ui-practices.yaml": "f8ecdd5bd4d12e0537fce197b8871323b80a90458b021e572b45e35b505dd82f"
+    },
+    "issued_at": "2026-11-13T19:02:56Z",
+    "expires_at": "2026-12-13T19:02:56Z",
+    "nonce": "0ae986f226284e1690e4801ab08d54aa"
+  }
+}

@@ -30,6 +30,10 @@ schema_version: "1"
 status: draft # draft -> confirmed only after a separate user action
 active_slice: file-entry-crud
 profile: react-antd-pro
+profile_version: "1"
+ui_system: .ddd/ui-system.yaml
+ui_practices: .ddd/ui-practices.yaml
+template: null # optional confirmed template-kit record
 boundaries:
   - id: file-entry-page
     kind: page

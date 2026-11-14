@@ -1,0 +1,22 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "051f581a5b2e4e35a724fad0402e8ad9",
+    "action": "template:confirm",
+    "arguments": {
+      "template_id": "vben-ant-design-pro-admin-shell",
+      "record": ".ddd/templates/vben-ant-design-pro-admin-shell.yaml"
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "68e1e63d8179f200afc7dd2d738ad4a2e7f2ccf377ecb461e34b08f89d9b3a48",
+    "record_digests": {
+      ".ddd/templates/vben-ant-design-pro-admin-shell.yaml": "9a5c0a95f8edb6edf6ff5eef2691f7cdf27d0be3670457b5db4d2125807b6045"
+    },
+    "issued_at": "2026-11-13T19:02:56Z",
+    "expires_at": "2026-12-13T19:02:56Z",
+    "nonce": "0a8e9d8746454ed79b8b6a606fedc853"
+  }
+}

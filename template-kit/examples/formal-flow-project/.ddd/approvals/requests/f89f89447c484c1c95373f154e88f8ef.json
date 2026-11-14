@@ -1,0 +1,22 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "f89f89447c484c1c95373f154e88f8ef",
+    "action": "workflow:confirm-ui",
+    "arguments": {
+      "transition": "confirm-ui",
+      "evidence": "Example fixture: confirm the AdminShell UI plan."
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "1047ea2f3a94a13edd89240fe225c60029911a19bd38846384929a41d54b9702",
+    "record_digests": {
+      ".ddd/ui-plan.yaml": "8d7c8a29d882e1e719afe2e8e421744891f02901251e6bb31947bcd3d0435aaf"
+    },
+    "issued_at": "2026-11-13T19:02:56Z",
+    "expires_at": "2026-12-13T19:02:56Z",
+    "nonce": "5a86eb56751846d39f851cfc09e9142f"
+  }
+}

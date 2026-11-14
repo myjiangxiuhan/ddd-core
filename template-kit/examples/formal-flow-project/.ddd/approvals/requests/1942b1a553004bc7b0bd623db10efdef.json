@@ -1,0 +1,23 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "1942b1a553004bc7b0bd623db10efdef",
+    "action": "workflow:approve-slice",
+    "arguments": {
+      "transition": "approve-slice",
+      "evidence": "Example fixture: approve one named template-registration slice.",
+      "slice_id": "admin-shell-template",
+      "slice_name": "Admin shell template registration",
+      "slice_digest": "e158538f1daf91089fe9057a572a041d87c506a1f35a29958ef95f47bf7a18dd"
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "62e8446f2436ff00a8009316e0f3aecbdf2f739be3ab8d1320e7abf3129ac1b9",
+    "record_digests": {},
+    "issued_at": "2026-11-13T19:02:56Z",
+    "expires_at": "2026-12-13T19:02:56Z",
+    "nonce": "6dee137a65674d0181d2e60ff0e71ee4"
+  }
+}

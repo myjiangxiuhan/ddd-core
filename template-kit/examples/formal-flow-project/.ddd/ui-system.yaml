@@ -1,0 +1,139 @@
+schema_version: '1'
+status: confirmed
+profile: react-antd-pro
+profile_version: '1'
+scope: project
+tokens:
+  format: dtcg-2025.10-or-local-compatible
+  primitive_groups:
+  - color
+  - typography
+  - spacing
+  - sizing
+  - radius
+  - border
+  - elevation
+  - motion
+  - breakpoint
+  - z_index
+  semantic_roles:
+  - surface
+  - surface-elevated
+  - surface-navigation
+  - surface-overlay
+  - text
+  - text-muted
+  - text-on-navigation
+  - border
+  - divider
+  - action-primary
+  - action-hover
+  - focus
+  - selected
+  - success
+  - warning
+  - danger
+  - info
+  source:
+    status: agent_inference
+    statement: Semantic roles are the project contract; source project colors are
+      evidence only.
+    evidence:
+    - .ddd/template-sources/vben-admin-v5.7.0.md
+    - .ddd/template-sources/ant-design-pro-v6.0.2.md
+themes:
+- id: light
+  selection:
+    status: user_decision
+    value: default theme for the example shell
+  semantic_overrides:
+    status: user_decision
+    value: bind project-owned tokens
+- id: dark
+  selection:
+    status: user_decision
+    value: explicit runtime switch
+  semantic_overrides:
+    status: user_decision
+    value: bind project-owned dark roles
+layout:
+  shell:
+    status: user_decision
+    value: app-shell with navigation, header, content, footer, and auxiliary seams
+  regions:
+  - app-shell
+  - brand
+  - primary-navigation
+  - secondary-navigation
+  - header
+  - header-actions
+  - breadcrumb
+  - tabbar
+  - content
+  - content-overlay
+  - footer
+  - auxiliary
+  container:
+    status: user_decision
+    value: PageContainer as the page context boundary
+  density:
+    status: user_decision
+    value: project token; no source default copied
+  breakpoints:
+    status: user_decision
+    value: use the target project's confirmed breakpoint tokens; copy no source breakpoint
+      values
+  responsive_rules:
+  - navigation can collapse without changing route ownership
+  - header actions remain keyboard reachable at every breakpoint
+  - content overflow is handled by the target component system
+accessibility:
+  contrast:
+    status: user_decision
+    value: project contrast baseline
+  keyboard_and_focus:
+    status: user_decision
+    value: visible focus for navigation, actions, dialogs, and tables
+  reduced_motion:
+    status: agent_recommendation
+    value: respect the user preference
+  text_scaling:
+    status: agent_recommendation
+    value: do not clip content when text is enlarged
+  touch_targets:
+    status: agent_recommendation
+    value: use target library guidance
+visual_states:
+- loading
+- empty
+- error
+- disabled
+- ready
+non_goals:
+- copying Vben or Ant Design Pro source implementation
+- choosing product brand colors from a source demo
+- defining feature-level business layout exceptions
+decisions:
+- id: token-authority
+  question: Who owns final token values?
+  status: confirmed
+  source: user_decision
+  answer: the target project's UI system
+  evidence: example fixture decision; source values remain evidence only
+- id: responsive-breakpoints
+  question: Which exact breakpoints are used?
+  status: confirmed
+  source: user_decision
+  answer: The target UI system owns the exact breakpoint tokens; this template contributes
+    only responsive behavior questions.
+  evidence: example fixture decision; no numeric source defaults copied
+evidence:
+- id: source-layout
+  status: source_fact
+  statement: Vben exposes shell regions, slots, and responsive layout states.
+  note: .ddd/template-sources/vben-admin-v5.7.0.md
+- id: target-primitives
+  status: source_fact
+  statement: Ant Design Pro exposes ProLayout, PageContainer, ProTable, ProForm, ProDescriptions,
+    and SettingDrawer seams.
+  note: .ddd/template-sources/ant-design-pro-v6.0.2.md

@@ -1,0 +1,188 @@
+schema_version: "1"
+status: draft
+id: vben-ant-design-pro-admin-shell
+version: "0.1-draft"
+profile: react-antd-pro
+profile_version: "1"
+description: "Clean-room React + Ant Design Pro application shell adapted from two pinned references"
+required_components: [ProLayout, PageContainer]
+sources:
+  - id: vben-admin-v5.7.0
+    kind: oss
+    locator: "https://github.com/vbenjs/vue-vben-admin"
+    ref: "v5.7.0"
+    license: "MIT"
+    attribution: "Vben Admin is the source reference; preserve MIT attribution if source code or assets are ever used."
+    evidence: "template-kit/examples/oss-research/vben-admin-v5.7.0.md"
+    extraction: pattern_only
+  - id: ant-design-pro-v6.0.2
+    kind: oss
+    locator: "https://github.com/ant-design/ant-design-pro"
+    ref: "v6.0.2"
+    license: "MIT"
+    attribution: "Ant Design Pro is the target-side source reference; preserve MIT attribution if source code or assets are ever used."
+    evidence: "template-kit/examples/oss-research/ant-design-pro-v6.0.2.md"
+    extraction: pattern_only
+mapping:
+  ui_system: ".ddd/ui-system.yaml"
+  ui_practices: ".ddd/ui-practices.yaml"
+  theme_roles:
+    - surface
+    - surface-elevated
+    - surface-navigation
+    - surface-overlay
+    - text
+    - text-muted
+    - text-on-navigation
+    - border
+    - divider
+    - action-primary
+    - action-hover
+    - focus
+    - selected
+    - success
+    - warning
+    - danger
+    - info
+    - density
+    - content-padding
+    - sidebar-width
+    - header-height
+    - content-width
+  layout_regions:
+    - app-shell
+    - brand
+    - primary-navigation
+    - secondary-navigation
+    - header
+    - header-actions
+    - breadcrumb
+    - tabbar
+    - content
+    - content-overlay
+    - footer
+    - auxiliary
+  primitives:
+    - ProLayout
+    - PageContainer
+    - ProCard
+    - ProTable
+    - ProForm
+    - ProDescriptions
+    - ProSkeleton
+    - SettingDrawer
+    - Tabs
+    - ConfigProvider
+    - Dropdown
+    - Avatar
+    - Badge
+    - Drawer
+    - FooterToolbar
+  adaptation:
+    source_framework: "vue"
+    source_library: "ant-design-vue + Vben core UI"
+    target_framework: "react"
+    target_library: "antd-pro"
+    primitive_map:
+      - source: VbenAdminLayout
+        target: ProLayout
+        reason: "Preserve shell regions and render seams while using the target layout primitive."
+      - source: LayoutContent
+        target: PageContainer/ProCard
+        reason: "Keep page context and content grouping in target primitives."
+      - source: LayoutMenu/LayoutMixedMenu
+        target: ProLayout route/menu contract
+        reason: "Route metadata remains the source of navigation and permission context."
+      - source: LayoutTabbar
+        target: Ant Design Tabs or a confirmed project tabbar seam
+        reason: "Keep tab lifecycle as a seam; do not assume the source tab behavior is required."
+      - source: VbenLogo
+        target: ProLayout logo/brand render seam
+        reason: "Use project brand and accessibility contract."
+      - source: LayoutHeader
+        target: ProLayout actionsRender/avatarProps/header seams
+        reason: "Retain header action responsibilities with React render props."
+      - source: Preferences
+        target: SettingDrawer plus project preference contract
+        reason: "Expose only confirmed project preferences."
+      - source: Notification/UserDropdown
+        target: Badge/Dropdown/Avatar/notification seams
+        reason: "Reuse target interaction primitives and request/auth contracts."
+      - source: LayoutContentSpinner
+        target: ProSkeleton or project loading seam
+        reason: "Keep loading feedback inside the target component system."
+      - source: LayoutFooter
+        target: ProLayout footerRender
+        reason: "Keep footer ownership at the application shell boundary."
+      - source: Vben token roles
+        target: Ant Design ConfigProvider theme/token and project UI system
+        reason: "Map semantic roles, never source color values."
+      - source: ProTable/ProForm/ProDescriptions
+        target: ProTable/ProForm/ProDescriptions
+        reason: "Use target-first primitives for page-level business UI."
+    target_invariants:
+      - target_framework
+      - target_library
+      - project_tokens
+      - project_theme_roles
+      - route_and_permission_contract
+      - accessibility_contract
+      - clean_room_source_boundary
+public_seams:
+  - AdminShell
+slots:
+  - brand
+  - headerActions
+  - userMenu
+  - notifications
+  - content
+  - footer
+  - auxiliary
+variables:
+  - name
+  - pascal_name
+  - kebab_name
+  - profile_id
+  - target
+  - route_tree
+  - theme_token_ref
+review_checks:
+  - template-source-pinned
+  - template-clean-room
+  - target-library-invariant
+  - ui-theme-role
+  - ui-layout-region
+  - ui-component-first
+  - ui-primitive-first
+  - no-source-default-colors
+confirmation:
+  status: pending
+  source: pending
+  evidence: null
+files:
+  - path: "{{kebab_name}}/index.tsx"
+    template_file: "template-kit/examples/vben-ant-design-pro-react-antd-pro/admin-shell.tsx.template"
+decisions:
+  - id: layout-mode
+    status: pending
+    question: "目标项目采用 side、top、mix 还是其他导航模式？"
+  - id: theme-modes
+    status: pending
+    question: "目标项目需要 light、dark、compact、color-weak 中的哪些模式？"
+  - id: token-source
+    status: pending
+    question: "主题角色由哪个已确认的 UI system token 提供？"
+  - id: tabbar-policy
+    status: pending
+    question: "是否需要页面 tabbar，以及 tab 生命周期由谁负责？"
+evidence:
+  - source: vben-admin-v5.7.0
+    note: "template-kit/examples/oss-research/vben-admin-v5.7.0.md"
+    facts: [V1, V2, V3, V4, V5, V6, V7]
+  - source: ant-design-pro-v6.0.2
+    note: "template-kit/examples/oss-research/ant-design-pro-v6.0.2.md"
+    facts: [A1, A2, A3, A4, A5, A6, A7]
+  - status: agent_inference
+    statement: "Vben is used for layout questions and state/slot coverage; Ant Design Pro is authoritative for React target primitives and target-side seams."
+  - status: user_decision
+    statement: "Create an example-only draft in the current skill repository."

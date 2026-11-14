@@ -1,0 +1,22 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "bb00b55d09b649648a1af4858b465942",
+    "action": "workflow:confirm-ui-system",
+    "arguments": {
+      "transition": "confirm-ui-system",
+      "evidence": "Example fixture: confirm the UI system record."
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "937cf0764308128d40af5b466d9e8b75d34742c60ebb66089de119dd750ea16d",
+    "record_digests": {
+      ".ddd/ui-system.yaml": "c13d70cd2e47a1c60ea480cec3ebd6909e361b2c6b6f702cadae84aec45f6ea6"
+    },
+    "issued_at": "2026-11-13T19:02:56Z",
+    "expires_at": "2026-12-13T19:02:56Z",
+    "nonce": "9a93bebe197141b29da798863a5c8684"
+  }
+}

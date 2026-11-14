@@ -1,0 +1,23 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "677d4397298f48939f5c03eff17fbfba",
+    "action": "workflow:select-profile",
+    "arguments": {
+      "transition": "select-profile",
+      "evidence": "Example fixture: select the exact react-antd-pro profile.",
+      "profile_id": "react-antd-pro",
+      "profile_version": "1",
+      "profile_digest": "81e0d90fbd0319c012ab8b1d19ca1084afabcbc1b82a30e5fd33b625958f30c2"
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "152e3ff0c160e376f835e1551cbeff40f4fdedadb70d1325b8f1cdf0871c57e3",
+    "record_digests": {},
+    "issued_at": "2026-11-13T19:02:56Z",
+    "expires_at": "2026-12-13T19:02:56Z",
+    "nonce": "a129182835af41afa8a2219b907d7b07"
+  }
+}

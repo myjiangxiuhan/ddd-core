@@ -1,0 +1,294 @@
+{
+  "schema_version": "1",
+  "control_mode": "human_led",
+  "project": {
+    "goal": "Validate the template-kit to scaffold-kit registration flow in an isolated example project."
+  },
+  "scope": {
+    "current_slice_candidate": {
+      "id": "admin-shell-template",
+      "name": "Admin shell template registration"
+    },
+    "deferred_capabilities": [
+      {
+        "id": "source-code-copy",
+        "description": "Copy source implementations, assets, fonts, or project configuration from references",
+        "status": "deferred",
+        "evidence": "The example is pattern_only and clean-room."
+      }
+    ],
+    "out_of_scope": [
+      "business implementation",
+      "dependency installation",
+      "production delivery"
+    ]
+  },
+  "decisions": [
+    {
+      "id": "example-purpose",
+      "question": "What is this project allowed to prove?",
+      "status": "answered",
+      "source": "user_decision",
+      "answer": "Prove provenance, UI foundation gates, and a clean-room scaffold dry-run.",
+      "evidence": "Example fixture decision record."
+    },
+    {
+      "id": "template-boundary",
+      "question": "Which template seam is being registered?",
+      "status": "answered",
+      "source": "user_decision",
+      "answer": "Register only the AdminShell clean-room template; do not copy source implementation.",
+      "evidence": "Example fixture decision record."
+    }
+  ],
+  "gates": {
+    "phase": "delivery",
+    "business_discovery": "confirmed",
+    "domain_design": "confirmed",
+    "slice_approval": "approved",
+    "technology_profile": "selected",
+    "ui_system": "confirmed",
+    "ui_practices": "confirmed",
+    "ui_design": "confirmed",
+    "delivery": "not_started",
+    "review": "not_started"
+  },
+  "active_slice": {
+    "id": "admin-shell-template",
+    "name": "Admin shell template registration"
+  },
+  "history": [
+    {
+      "transition": "start-business-lab",
+      "actor": "agent",
+      "evidence": "Example fixture: begin the human-led business gate."
+    },
+    {
+      "transition": "record-mainline",
+      "actor": "agent",
+      "evidence": "Example fixture: record a narrow template-registration mainline."
+    },
+    {
+      "transition": "confirm-mainline",
+      "actor": "user",
+      "evidence": "Example fixture: confirm the mainline for the registration slice.",
+      "approval": {
+        "request_id": "23ce8ba4032e4479a59ad95d1663d600",
+        "payload_digest": "691f39adae0f95441cca3e046eb9858e36115c2a26008280caeda3560a8eef3a",
+        "public_key_fingerprint": "5dc414ba008ccef2b262c851b0f0b01f1b8f0ab2da46f6c0672d197296482837",
+        "credential": ".ddd/approvals/credentials/confirm-mainline.json",
+        "request": ".ddd/approvals/requests/23ce8ba4032e4479a59ad95d1663d600.json",
+        "action": "workflow:confirm-mainline",
+        "arguments": {
+          "transition": "confirm-mainline",
+          "evidence": "Example fixture: confirm the mainline for the registration slice.",
+          "artifact": ".ddd/example-mainline.md"
+        },
+        "state_digest": "5e753cffc700edcf4131343a490f85f9c5b93cafdb9e5e6ad1dfa287150587c0",
+        "record_digests": {
+          ".ddd/example-mainline.md": "94368f52dda4610a56bf916796a485d53b3f941d30003c01726ba975cd3cc582"
+        },
+        "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357"
+      }
+    },
+    {
+      "transition": "confirm-design",
+      "actor": "user",
+      "evidence": "Example fixture: confirm the technology-neutral design boundary.",
+      "approval": {
+        "request_id": "75b6eb3b0f954ddd92e1c7cfafbf9c4e",
+        "payload_digest": "c864f0613ad0c4c55e2e05060274b9affee84c02e9943d24c1004ec00ac7c857",
+        "public_key_fingerprint": "5dc414ba008ccef2b262c851b0f0b01f1b8f0ab2da46f6c0672d197296482837",
+        "credential": ".ddd/approvals/credentials/confirm-design.json",
+        "request": ".ddd/approvals/requests/75b6eb3b0f954ddd92e1c7cfafbf9c4e.json",
+        "action": "workflow:confirm-design",
+        "arguments": {
+          "transition": "confirm-design",
+          "evidence": "Example fixture: confirm the technology-neutral design boundary.",
+          "domain_design_digest": "5df4f3c0df765b8c6ff67562f795a650020a097d1aa4f436b3d58df3ec90a307"
+        },
+        "state_digest": "ffec2ef8c4a44afa6c8d62485a3acb43fab324e29dfb40d28ffe5968b0c3af10",
+        "record_digests": {},
+        "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357"
+      }
+    },
+    {
+      "transition": "approve-slice",
+      "actor": "user",
+      "evidence": "Example fixture: approve one named template-registration slice.",
+      "approval": {
+        "request_id": "1942b1a553004bc7b0bd623db10efdef",
+        "payload_digest": "922bdc38843994175b44b03ca4dc9dab8406c011181d5130321a6046ab5c4bbd",
+        "public_key_fingerprint": "5dc414ba008ccef2b262c851b0f0b01f1b8f0ab2da46f6c0672d197296482837",
+        "credential": ".ddd/approvals/credentials/approve-slice.json",
+        "request": ".ddd/approvals/requests/1942b1a553004bc7b0bd623db10efdef.json",
+        "action": "workflow:approve-slice",
+        "arguments": {
+          "transition": "approve-slice",
+          "evidence": "Example fixture: approve one named template-registration slice.",
+          "slice_id": "admin-shell-template",
+          "slice_name": "Admin shell template registration",
+          "slice_digest": "e158538f1daf91089fe9057a572a041d87c506a1f35a29958ef95f47bf7a18dd"
+        },
+        "state_digest": "62e8446f2436ff00a8009316e0f3aecbdf2f739be3ab8d1320e7abf3129ac1b9",
+        "record_digests": {},
+        "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357"
+      }
+    },
+    {
+      "transition": "select-profile",
+      "actor": "user",
+      "evidence": "Example fixture: select the exact react-antd-pro profile.",
+      "approval": {
+        "request_id": "677d4397298f48939f5c03eff17fbfba",
+        "payload_digest": "425c7466135169ef2a7ee254a955784e19c61e45d68d1798b1b36201c6548545",
+        "public_key_fingerprint": "5dc414ba008ccef2b262c851b0f0b01f1b8f0ab2da46f6c0672d197296482837",
+        "credential": ".ddd/approvals/credentials/select-profile.json",
+        "request": ".ddd/approvals/requests/677d4397298f48939f5c03eff17fbfba.json",
+        "action": "workflow:select-profile",
+        "arguments": {
+          "transition": "select-profile",
+          "evidence": "Example fixture: select the exact react-antd-pro profile.",
+          "profile_id": "react-antd-pro",
+          "profile_version": "1",
+          "profile_digest": "81e0d90fbd0319c012ab8b1d19ca1084afabcbc1b82a30e5fd33b625958f30c2"
+        },
+        "state_digest": "152e3ff0c160e376f835e1551cbeff40f4fdedadb70d1325b8f1cdf0871c57e3",
+        "record_digests": {},
+        "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357"
+      }
+    },
+    {
+      "transition": "draft-ui-system",
+      "actor": "agent",
+      "evidence": "Example fixture: create the project UI system draft."
+    },
+    {
+      "transition": "confirm-ui-system",
+      "actor": "user",
+      "evidence": "Example fixture: confirm the UI system record.",
+      "approval": {
+        "request_id": "bb00b55d09b649648a1af4858b465942",
+        "payload_digest": "d7e34c4e3274efb17f2c98ec4408381272d4d83de3ff45a85df0268ab3feaa47",
+        "public_key_fingerprint": "5dc414ba008ccef2b262c851b0f0b01f1b8f0ab2da46f6c0672d197296482837",
+        "credential": ".ddd/approvals/credentials/confirm-ui-system.json",
+        "request": ".ddd/approvals/requests/bb00b55d09b649648a1af4858b465942.json",
+        "action": "workflow:confirm-ui-system",
+        "arguments": {
+          "transition": "confirm-ui-system",
+          "evidence": "Example fixture: confirm the UI system record."
+        },
+        "state_digest": "937cf0764308128d40af5b466d9e8b75d34742c60ebb66089de119dd750ea16d",
+        "record_digests": {
+          ".ddd/ui-system.yaml": "c13d70cd2e47a1c60ea480cec3ebd6909e361b2c6b6f702cadae84aec45f6ea6"
+        },
+        "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357"
+      }
+    },
+    {
+      "transition": "draft-ui-practices",
+      "actor": "agent",
+      "evidence": "Example fixture: create the framework practice draft."
+    },
+    {
+      "transition": "confirm-ui-practices",
+      "actor": "user",
+      "evidence": "Example fixture: confirm the component-first practice record.",
+      "approval": {
+        "request_id": "d4ecb451714d43b5968fac0ef1f98f7a",
+        "payload_digest": "57bb2727971e7ea09dd174fcd162af8fd266013fa5712f0e1981b9bbc72e6e32",
+        "public_key_fingerprint": "5dc414ba008ccef2b262c851b0f0b01f1b8f0ab2da46f6c0672d197296482837",
+        "credential": ".ddd/approvals/credentials/confirm-ui-practices.json",
+        "request": ".ddd/approvals/requests/d4ecb451714d43b5968fac0ef1f98f7a.json",
+        "action": "workflow:confirm-ui-practices",
+        "arguments": {
+          "transition": "confirm-ui-practices",
+          "evidence": "Example fixture: confirm the component-first practice record."
+        },
+        "state_digest": "df78e297069bc0b5385844f1cecb84b245a0a70391309f6b4f4d9dda0a26b784",
+        "record_digests": {
+          ".ddd/ui-practices.yaml": "f8ecdd5bd4d12e0537fce197b8871323b80a90458b021e572b45e35b505dd82f"
+        },
+        "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357"
+      }
+    },
+    {
+      "transition": "draft-ui",
+      "actor": "agent",
+      "evidence": "Example fixture: draft the AdminShell UI plan."
+    },
+    {
+      "transition": "confirm-ui",
+      "actor": "user",
+      "evidence": "Example fixture: confirm the AdminShell UI plan.",
+      "approval": {
+        "request_id": "f89f89447c484c1c95373f154e88f8ef",
+        "payload_digest": "2c462530fe37c2ee6d116ce5ca33469a16b2aac4c61cb6f7a9b1a3b42bfeb04d",
+        "public_key_fingerprint": "5dc414ba008ccef2b262c851b0f0b01f1b8f0ab2da46f6c0672d197296482837",
+        "credential": ".ddd/approvals/credentials/confirm-ui.json",
+        "request": ".ddd/approvals/requests/f89f89447c484c1c95373f154e88f8ef.json",
+        "action": "workflow:confirm-ui",
+        "arguments": {
+          "transition": "confirm-ui",
+          "evidence": "Example fixture: confirm the AdminShell UI plan."
+        },
+        "state_digest": "1047ea2f3a94a13edd89240fe225c60029911a19bd38846384929a41d54b9702",
+        "record_digests": {
+          ".ddd/ui-plan.yaml": "8d7c8a29d882e1e719afe2e8e421744891f02901251e6bb31947bcd3d0435aaf"
+        },
+        "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357"
+      }
+    },
+    {
+      "transition": "record-decision",
+      "actor": "user",
+      "evidence": "Example fixture decision record.",
+      "approval": {
+        "request_id": "27c48813ad51437d97e12e809f69570d",
+        "payload_digest": "ba1aae86299301fd9ca69d10ce7a805e0db8e7851b5d1f9b85b75a3227a2e366",
+        "public_key_fingerprint": "5dc414ba008ccef2b262c851b0f0b01f1b8f0ab2da46f6c0672d197296482837",
+        "credential": ".ddd/approvals/credentials/record-decision-example-purpose.json",
+        "request": ".ddd/approvals/requests/27c48813ad51437d97e12e809f69570d.json",
+        "action": "workflow:record-decision",
+        "arguments": {
+          "transition": "record-decision",
+          "evidence": "Example fixture decision record.",
+          "decision_id": "example-purpose",
+          "answer": "Prove provenance, UI foundation gates, and a clean-room scaffold dry-run.",
+          "decision_digest": "327f70905827b7097cfebd33f2243a1959dd6dec59b9aa6b00bef5dc2bc78409"
+        },
+        "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+        "state_digest": "52ad89379e0085cecc843503d5e755997a7b0e407939a199db3c4541dfb72632",
+        "record_digests": {}
+      }
+    },
+    {
+      "transition": "record-decision",
+      "actor": "user",
+      "evidence": "Example fixture decision record.",
+      "approval": {
+        "request_id": "1b0d6ad5ec5a4d029b16f0176d007463",
+        "payload_digest": "62b2e07d512e11965444d8d00f6b983c196c4897e59cc296f45d4d3564f91f9f",
+        "public_key_fingerprint": "5dc414ba008ccef2b262c851b0f0b01f1b8f0ab2da46f6c0672d197296482837",
+        "credential": ".ddd/approvals/credentials/record-decision-template-boundary.json",
+        "request": ".ddd/approvals/requests/1b0d6ad5ec5a4d029b16f0176d007463.json",
+        "action": "workflow:record-decision",
+        "arguments": {
+          "transition": "record-decision",
+          "evidence": "Example fixture decision record.",
+          "decision_id": "template-boundary",
+          "answer": "Register only the AdminShell clean-room template; do not copy source implementation.",
+          "decision_digest": "e2ffe23566f37e441c0cb4edc56b4adc912a4f354a0d72ea59bf5b5b2afc0805"
+        },
+        "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+        "state_digest": "8507654b628ebb2f76dc5da440254a822db539f4c744a0928da9519bcf5ec314",
+        "record_digests": {}
+      }
+    }
+  ],
+  "business_artifact": ".ddd/example-mainline.md",
+  "technology_profile": {
+    "id": "react-antd-pro",
+    "version": "1"
+  }
+}

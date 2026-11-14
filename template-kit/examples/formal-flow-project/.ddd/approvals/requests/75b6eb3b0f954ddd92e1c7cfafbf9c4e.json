@@ -1,0 +1,21 @@
+{
+  "schema_version": "1",
+  "payload": {
+    "schema_version": "1",
+    "algorithm": "Ed25519",
+    "request_id": "75b6eb3b0f954ddd92e1c7cfafbf9c4e",
+    "action": "workflow:confirm-design",
+    "arguments": {
+      "transition": "confirm-design",
+      "evidence": "Example fixture: confirm the technology-neutral design boundary.",
+      "domain_design_digest": "5df4f3c0df765b8c6ff67562f795a650020a097d1aa4f436b3d58df3ec90a307"
+    },
+    "project_id": "a0d78cb07037a19dea756e67b01eed1cfa696399027b259a9d4f889903b99357",
+    "state_file": ".ddd/workflow-state.json",
+    "state_digest": "ffec2ef8c4a44afa6c8d62485a3acb43fab324e29dfb40d28ffe5968b0c3af10",
+    "record_digests": {},
+    "issued_at": "2026-11-13T19:02:56Z",
+    "expires_at": "2026-12-13T19:02:56Z",
+    "nonce": "f5ae9e3129414399ba5b8eb439759435"
+  }
+}
