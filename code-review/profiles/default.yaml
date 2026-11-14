@@ -69,3 +69,21 @@ checks:
     blocking: true
     rule: "Generated files match the approved scaffold kind, target, naming, and public seam."
     evidence: [".ddd/ui-plan.yaml", ".ddd/scaffold.yaml", "git diff"]
+  - id: performance-contract
+    axis: performance
+    severity: blocker
+    blocking: true
+    rule: "Persistence or database changes match a confirmed slice performance contract with a pinned adapter_profile, workload budgets, query-plan evidence, and database-specific adapter rules."
+    evidence: [".ddd/performance/<slice-id>.yaml", ".ddd/performance/<slice-id>.baseline.json", "selected adapter profile", "git diff"]
+  - id: performance-sql-access-path
+    axis: performance
+    severity: major
+    blocking: true
+    rule: "SQL changes have an explicit access path, bounded projection, index/order rationale, pagination strategy, transaction and lock scope, timeout, and no unverified N+1 or unbounded list path."
+    evidence: [".ddd/performance/<slice-id>.yaml", "query-plan evidence", "git diff"]
+  - id: performance-budget-regression
+    axis: performance
+    severity: major
+    blocking: true
+    rule: "The measured baseline is reproducible with fixed dataset, seed, concurrency, warmup, duration, profile, and commit metadata; p95/p99, throughput, errors, and declared resource budgets pass."
+    evidence: [".ddd/performance/<slice-id>.baseline.json", "performance-loop/scripts/compare_budget.py"]

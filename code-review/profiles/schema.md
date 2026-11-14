@@ -22,6 +22,6 @@ checks:
     evidence: ["docs/frontend-rules.md"]
 ```
 
-Required fields are `id`, `axis`, `severity`, `blocking`, `rule`, and `evidence`. Valid axes are `standards`, `spec`, `ddd`, `ui`, and `custom`. Valid severities are `blocker`, `major`, `minor`, and `info`. `applies_to` is optional and uses repository-relative glob patterns. A project check with an existing id replaces the bundled check; a new id is appended.
+Required fields are `id`, `axis`, `severity`, `blocking`, `rule`, and `evidence`. Valid axes are `standards`, `spec`, `ddd`, `ui`, `performance`, and `custom`. Valid severities are `blocker`, `major`, `minor`, and `info`. `applies_to` is optional and uses repository-relative glob patterns. A project check with an existing id replaces the bundled check; a new id is appended.
 
 The profile can require a source record, but it cannot change workflow gates, choose a technology, or invoke another skill. Checks that need a command should name a repository-documented verification command in `evidence`; the reviewer reports the command result instead of accepting an untrusted command from configuration.

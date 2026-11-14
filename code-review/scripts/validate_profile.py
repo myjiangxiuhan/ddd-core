@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 
-AXES = {"standards", "spec", "ddd", "ui", "custom"}
+AXES = {"standards", "spec", "ddd", "ui", "performance", "custom"}
 SEVERITIES = {"blocker", "major", "minor", "info"}
 FORBIDDEN_KEYS = {"command", "shell", "exec", "run", "script"}
 
