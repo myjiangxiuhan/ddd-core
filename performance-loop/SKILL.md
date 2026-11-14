@@ -19,6 +19,7 @@ If the question is still about whether a design can work, use `$prototype-loop` 
 - `adapt`: map the contract to the exact database engine/version, driver, query layer, and supported capabilities. Record source evidence for each database-specific rule; never use a generic SQL rule as if it were a vendor guarantee.
 - `baseline`: create or run a repeatable benchmark with production-shaped data, fixed seed, warmup, concurrency, duration, and environment metadata. Store raw measurements and query-plan evidence.
 - `verify`: compare the baseline with the confirmed budgets. A failed budget is evidence for `$repair-loop`, not permission to loosen the contract.
+- `compare-frameworks`: run the same confirmed workload against the three pinned Rust database profiles. Keep the engine, schema, seed, public seam, runtime, environment, and commit fixed; report p95 and throughput separately without selecting a winner automatically. Read [the Rust framework comparison rules](references/rust-framework-comparison.md).
 
 ## Process
 
@@ -43,6 +44,7 @@ python performance-loop/scripts/validate_contract.py .ddd/performance/<slice-id>
 python performance-loop/scripts/validate_profile.py postgresql-16 --profiles-dir .ddd/performance-profiles
 python performance-loop/scripts/compare_budget.py .ddd/performance/<slice-id>.yaml .ddd/performance/<slice-id>.baseline.json --state .ddd/workflow-state.json --trusted-public-key <user-trust-key> --profiles-dir .ddd/performance-profiles
 python performance-loop/scripts/generate_sql.py postgresql-16 performance-loop/examples/file-entry-crud.sql.yaml --state .ddd/workflow-state.json --trusted-public-key <user-trust-key> --profiles-dir .ddd/performance-profiles
+python performance-loop/scripts/compare_frameworks.py performance-loop/examples/rust-database-framework-comparison.yaml .ddd/performance/rust-database-framework-comparison.results.json --adapter-profiles-dir adapter-kit/profiles
 ```
 
 ## Hard stops
@@ -53,6 +55,7 @@ python performance-loop/scripts/generate_sql.py postgresql-16 performance-loop/e
 - Do not edit a bundled profile in place to make a failing query pass. Copy it into the project's configured profile directory, pin the engine version, record the capability evidence, and obtain a new user decision when the portability or operational cost changes.
 - Do not mark a draft contract confirmed without a user decision covering the budgets, workload assumptions, and database adaptation.
 - Do not claim a performance improvement from a microbenchmark with a toy dataset, unspecified concurrency, missing warmup, or no query-plan evidence.
+- Do not claim that SQLx, tokio-postgres, or Toasty is faster from library reputation or a synthetic result. The framework comparison must bind the same engine, schema digest, seed/dataset digest, public seam, runtime, environment, commit, warmup, duration, and sample threshold; the comparator reports separate metric orderings and never creates an overall winner.
 - Do not compare runs across different schema, seed, profile, commit, or environment metadata as if they were the same baseline.
 - Do not optimize by changing a product rule, consistency guarantee, or pagination meaning; return to `$ddd-core` when the behavior changes.
 - Do not use `EXPLAIN ANALYZE` or an equivalent execution mode against production writes without an explicit safety decision; prefer a replica or isolated dataset.
@@ -67,6 +70,7 @@ Return the active slice, one performance question, workload facts, user-owned bu
 - [Performance contract schema](references/contract-schema.md) (`performance.contract`)
 - [Database adaptation rules](references/database-adaptation.md) (`performance.database-adaptation`)
 - [Database profile schema](profiles/schema.md) (`performance.database-profile`)
+- [Rust database-layer comparison](references/rust-framework-comparison.md) (`performance.rust-framework-comparison`)
 - [Bounded SQL operation spec](references/sql-spec.md) (`performance.sql-operation-spec`)
 - [Workflow state](../ddd-core/rules/workflow-state.md) (`ddd.workflow-state`)
 - [Scope and future-capability rules](../ddd-core/rules/scope.md) (`ddd.scope`)

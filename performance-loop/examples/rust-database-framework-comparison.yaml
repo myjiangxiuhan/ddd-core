@@ -1,0 +1,91 @@
+schema_version: "1"
+id: rust-database-framework-comparison
+status: draft
+purpose: "Compare three Rust database layers at the same Axum/PostgreSQL seam."
+controls:
+  framework:
+    name: axum
+    version: "0.8.9"
+  runtime:
+    name: tokio
+    version: "1.54.1"
+  rust:
+    edition: "2024"
+    msrv: "1.95"
+  database:
+    engine: postgresql
+    version: "16"
+    performance_profile: postgresql-16
+  schema_digest: "sha256:replace-with-schema-digest"
+  seed_digest: "sha256:replace-with-seed-digest"
+  dataset_rows: 100000
+  dataset_distribution: "state the skew that matters to the query"
+  environment_digest: "sha256:replace-with-benchmark-environment-digest"
+workload:
+  warmup_seconds: 30
+  measurement_seconds: 60
+  scenarios:
+    - id: list-file-entries
+      operation: read
+      public_seam: "GET /file-entries"
+      concurrency: 20
+      target_rps: 100
+      budget:
+        p95_ms: 200
+        p99_ms: 500
+        error_rate_percent: 0.1
+    - id: upsert-file-entry
+      operation: write
+      public_seam: "PUT /file-entries/{id}"
+      concurrency: 10
+      target_rps: 50
+      budget:
+        p95_ms: 250
+        p99_ms: 700
+        error_rate_percent: 0.1
+frameworks:
+  - id: rust-axum-sqlx
+    adapter_profile: rust-axum-sqlx
+    adapter_profile_file: rust-axum-sqlx.yaml
+    adapter_profile_digest: sha256:85260e6f3448fb5150f2773f7b3149f851a2c01082fffd9b1305f6ffffcbc4a8
+    driver: sqlx
+    driver_version: "0.9.0"
+    driver_package_version: "0.9.0"
+    query_model: compile_time_checked_sql
+    migration_tool: sqlx-cli@0.9.0
+    migration_mode: cli
+  - id: rust-axum-tokio-postgres
+    adapter_profile: rust-axum-tokio-postgres
+    adapter_profile_file: rust-axum-tokio-postgres.yaml
+    adapter_profile_digest: sha256:41cd8700385b15b6cbb9bddd3752236171831424abe3765735f4d4430709947c
+    driver: tokio-postgres
+    driver_version: "0.7.18"
+    driver_package_version: "0.7.18"
+    query_model: hand_written_parameterized_sql
+    migration_tool: refinery@0.9.2
+    migration_mode: embedded_runner
+  - id: rust-axum-toasty
+    adapter_profile: rust-axum-toasty
+    adapter_profile_file: rust-axum-toasty.yaml
+    adapter_profile_digest: sha256:46b6d42f431e6ef6ccd0d24f05f25b713b8ad7b2f2a11808e6e4fe860e8c2f00
+    driver: toasty
+    driver_version: "0.11.0"
+    driver_package_version: "0.8.0"
+    query_model: generated_async_orm
+    migration_tool: refinery@0.9.2
+    migration_mode: external_runner
+metrics:
+  - throughput_rps
+  - p50_ms
+  - p95_ms
+  - p99_ms
+  - error_rate_percent
+  - db_connections
+  - lock_wait_ms
+comparison_rules:
+  same_schema_seed_and_environment: true
+  same_public_seam: true
+  report_best_p95: true
+  report_best_throughput: true
+  declare_overall_winner: false
+  minimum_samples_per_scenario: 30
