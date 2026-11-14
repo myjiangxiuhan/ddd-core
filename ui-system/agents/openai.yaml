@@ -1,0 +1,6 @@
+interface:
+  display_name: "UI System"
+  short_description: "Define tokens, themes, layout, and accessibility"
+  default_prompt: "Use $ui-system to draft and confirm the project's UI system before planning a page."
+policy:
+  allow_implicit_invocation: false

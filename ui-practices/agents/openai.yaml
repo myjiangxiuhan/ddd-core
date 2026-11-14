@@ -1,0 +1,6 @@
+interface:
+  display_name: "UI Practices"
+  short_description: "Collect framework guidance and enforce component-first choices"
+  default_prompt: "Use $ui-practices to collect version-pinned React, Vue, Angular, and UI-library practices before planning a page."
+policy:
+  allow_implicit_invocation: false
