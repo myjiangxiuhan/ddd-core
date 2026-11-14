@@ -53,6 +53,31 @@ def string_list(value: Any, label: str) -> list[str]:
     return value
 
 
+def validate_database_binding(value: Any) -> dict[str, Any]:
+    """Validate the database family binding without forcing a server version."""
+    database = mapping(value, "database")
+    selection = database.get("selection", "exact")
+    if selection == "project":
+        engine = text(database.get("engine"), "database.engine")
+        profile_prefix = text(database.get("profile_prefix"), "database.profile_prefix")
+        if not profile_prefix.endswith("-"):
+            raise ProfileError("database.profile_prefix must end with '-' so future profiles remain selectable")
+        catalog = database.get("profile_catalog", "performance-loop/profiles/catalog.yaml")
+        text(catalog, "database.profile_catalog")
+        if "version" in database or "performance_profile" in database:
+            raise ProfileError(
+                "project-selected database bindings must not pin database.version or database.performance_profile"
+            )
+        return database
+    if selection != "exact":
+        raise ProfileError("database.selection must be exact or project")
+    if text(database.get("engine"), "database.engine") != "postgresql":
+        raise ProfileError("the Rust comparison profiles must use postgresql")
+    text(database.get("version"), "database.version")
+    text(database.get("performance_profile"), "database.performance_profile")
+    return database
+
+
 def validate_profile(value: dict[str, Any]) -> dict[str, Any]:
     if value.get("schema_version") != "1":
         raise ProfileError('schema_version must be "1"')
@@ -83,11 +108,7 @@ def validate_profile(value: dict[str, Any]) -> dict[str, Any]:
     serialization = mapping(value.get("serialization"), "serialization")
     text(serialization.get("serde"), "serialization.serde")
 
-    database = mapping(value.get("database"), "database")
-    if text(database.get("engine"), "database.engine") != "postgresql":
-        raise ProfileError("the Rust comparison profiles must use the same postgresql engine")
-    text(database.get("version"), "database.version")
-    text(database.get("performance_profile"), "database.performance_profile")
+    database = validate_database_binding(value.get("database"))
 
     driver = mapping(value.get("driver"), "driver")
     driver_name = text(driver.get("name"), "driver.name")

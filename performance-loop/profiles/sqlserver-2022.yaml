@@ -3,6 +3,11 @@ id: sqlserver-2022
 engine: sqlserver
 version: "2022"
 profile_version: "1"
+release:
+  channel: supported
+  tested_minor: "16.0.4295.3"
+  support_until: "2033-01-12"
+  source: https://learn.microsoft.com/en-us/lifecycle/products/sql-server-2022
 identifier_quote_left: '['
 identifier_quote_right: ']'
 parameter_style: named_at

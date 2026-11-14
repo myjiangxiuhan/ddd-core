@@ -19,6 +19,12 @@ A user decision transition uses the evidence visible in the current conversation
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --transition confirm-design --evidence "user confirmed the slice design"
 ```
 
+An application technology decision may record independent components in the same transition:
+
+```text
+python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --transition select-profile --component language:rust:1.95 --component framework:axum:0.8.9 --component runtime:tokio:1.54.1 --component data_access:sqlx:0.9.0 --component migration:sqlx-cli:0.9.0 --evidence "user selected the application components"
+```
+
 There is no external approval path. The ledger records the user's evidence and the resulting transition so every collaborator can inspect the same project state.
 
 ## Minimum shape
@@ -54,7 +60,7 @@ There is no external approval path. The ledger records the user's evidence and t
 - `business_discovery` records whether the user has supplied a business mainline: `not_started`, `in_progress`, `draft`, or `confirmed`.
 - `domain_design` is `draft` or `confirmed`.
 - `slice_approval` is `pending` or `approved`; it identifies the current `active_slice`.
-- `technology_profile` is `pending` or `selected`; its record names the exact application stack.
+- `technology_profile` is `pending` or `selected`; its record names the independently selected application components or an explicit compatibility preset. It does not imply a database server version.
 - `database_profile`, `performance_contract`, and `baseline` result are supporting records. UI foundation, practice, and plan files are the source of truth for visual boundaries; older `gates.ui_system`, `gates.ui_practices`, and `gates.ui_design` fields may remain as summaries but are not required when the records are present. Supporting records are validated when a tool uses them; they do not become separate workflow gates.
 - `delivery` is `not_started`, `in_progress`, `verified`, or `blocked`.
 - `review` is `not_started`, `passed`, or `blocked`.
@@ -64,7 +70,7 @@ There is no external approval path. The ledger records the user's evidence and t
 
 - `$ddd-core` owns scope, decisions, domain design, and the active slice.
 - `$business-lab` owns business observations and the user-authored mainline.
-- `$adapter-kit` records one exact application technology profile.
+- `$adapter-kit` records the selected application components or an explicit compatibility preset. `$performance-loop` records the exact database profile separately.
 - `$performance-loop` owns the database profile, performance contract, and baseline records when persistence evidence is needed. `$ui-system`, `$ui-practices`, `$ui-architecture`, and `$template-kit` own their supporting records. A supporting snapshot may be written mechanically after the record is confirmed; none of them silently starts delivery.
 - `$delivery-loop` owns one active slice and its verification result.
 - `$repair-loop` owns one confirmed failure and its regression evidence.

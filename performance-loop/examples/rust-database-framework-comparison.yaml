@@ -14,8 +14,8 @@ controls:
     msrv: "1.95"
   database:
     engine: postgresql
-    version: "16"
-    performance_profile: postgresql-16
+    version: "18"
+    performance_profile: postgresql-18
   schema_digest: "sha256:replace-with-schema-digest"
   seed_digest: "sha256:replace-with-seed-digest"
   dataset_rows: 100000
@@ -47,7 +47,7 @@ frameworks:
   - id: rust-axum-sqlx
     adapter_profile: rust-axum-sqlx
     adapter_profile_file: rust-axum-sqlx.yaml
-    adapter_profile_digest: sha256:85260e6f3448fb5150f2773f7b3149f851a2c01082fffd9b1305f6ffffcbc4a8
+    adapter_profile_digest: sha256:718e45e84fc68486d17e39dddbed1ef3e50022482d0f6a8e09ebfa7d8e9d298c
     driver: sqlx
     driver_version: "0.9.0"
     driver_package_version: "0.9.0"
@@ -57,7 +57,7 @@ frameworks:
   - id: rust-axum-tokio-postgres
     adapter_profile: rust-axum-tokio-postgres
     adapter_profile_file: rust-axum-tokio-postgres.yaml
-    adapter_profile_digest: sha256:41cd8700385b15b6cbb9bddd3752236171831424abe3765735f4d4430709947c
+    adapter_profile_digest: sha256:03fc14a49b9328f8bdc8b960ef75ed9ae3166d3ebbcfc9460b5afc5059e11ae1
     driver: tokio-postgres
     driver_version: "0.7.18"
     driver_package_version: "0.7.18"
@@ -67,7 +67,7 @@ frameworks:
   - id: rust-axum-toasty
     adapter_profile: rust-axum-toasty
     adapter_profile_file: rust-axum-toasty.yaml
-    adapter_profile_digest: sha256:46b6d42f431e6ef6ccd0d24f05f25b713b8ad7b2f2a11808e6e4fe860e8c2f00
+    adapter_profile_digest: sha256:ec8cc76b9d12e20db0738da1f36825ae67a7d15391d234f192538af60b4f5354
     driver: toasty
     driver_version: "0.11.0"
     driver_package_version: "0.8.0"

@@ -9,7 +9,7 @@ This is a user-invoked evidence and policy pause. It collects official framework
 
 ## Preconditions
 
-Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), the selected technology profile, the optional confirmed `.ddd/ui-system.yaml`, and [the practice schema](references/practice-schema.md). Run:
+Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), the selected technology components or explicit UI preset, the optional confirmed `.ddd/ui-system.yaml`, and [the practice schema](references/practice-schema.md). Run:
 
 ```text
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require ui-practices
@@ -23,7 +23,7 @@ An existing `.ddd/ui-practices.yaml` is evidence only. For a UI slice, the user 
 
 Collect evidence in this order:
 
-1. **Exact versions:** package manifest, lockfile, selected adapter profile, and existing build configuration.
+1. **Exact versions:** package manifest, lockfile, selected component records, and existing build configuration.
 2. **Framework sources:** read the official documentation for the selected framework. Use only the relevant section of [the framework matrix](references/framework-matrix.md); do not load unrelated framework guidance.
 3. **Library sources:** inspect the exact component-library documentation and local usage for primitives, composition, theming, forms, data display, loading, empty, error, and accessibility states.
 4. **Local precedent:** find the closest page and record its component boundaries, state owner, request seam, tests, and exceptions.

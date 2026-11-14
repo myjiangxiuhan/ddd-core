@@ -9,7 +9,7 @@ This is a user-invoked performance design and evidence workflow. It keeps perfor
 
 ## Invocation
 
-Use it after one active slice and an application technology profile exist. Read [workflow state](../ddd-core/rules/workflow-state.md), [scope rules](../ddd-core/rules/scope.md), the active slice, the selected adapter profile, and [the contract schema](references/contract-schema.md). If a database-backed question has no database profile, pause and ask the user to choose one; do not turn that pause into a signing ceremony.
+Use it after one active slice and the application technology components exist. Read [workflow state](../ddd-core/rules/workflow-state.md), [scope rules](../ddd-core/rules/scope.md), the active slice, the selected adapter components or compatibility preset, the database-profile catalog, and [the contract schema](references/contract-schema.md). If a database-backed question has no exact database profile, ask the user to choose one from the compatible family; do not turn that pause into a signing ceremony.
 
 If the question is still about whether a design can work, use `$prototype-loop` for the throwaway experiment first. If a confirmed budget is already failing, use `$repair-loop`; do not redefine the budget inside a repair.
 
@@ -26,7 +26,7 @@ If the question is still about whether a design can work, use `$prototype-loop` 
 1. Name one active slice and one performance question. Keep the business behavior and acceptance scenario separate from the measurement method.
 2. Ask the independent frontier, normally 1-4 questions: dataset cardinality and skew, read/write mix and concurrency, p50/p95/p99 latency or throughput budgets, error/resource limits, consistency/isolation, and whether the path is a list, point lookup, batch, or contention hotspot. Do not invent numbers when the user has not supplied them.
 3. Record a technology-neutral contract before choosing SQL: workload scenarios, data shape, budgets, consistency, acceptable staleness, and non-goals. A contract must identify the highest public seam that the benchmark observes.
-4. In `adapt`, require an exact database engine/version, driver, ORM/query builder or SQL generator, and migration strategy. Select a configured database profile from `profiles/`, then map each query shape to an index/order/pagination strategy, transaction and lock scope, batch limit, timeout, and plan-evidence command for that database. Use [the bounded SQL operation spec](references/sql-spec.md) and `scripts/generate_sql.py` to produce reviewable parameterized SQL; generation must stop when the profile does not support a requested capability.
+4. In `adapt`, require an exact database profile ID and tested server/library release, plus the driver, ORM/query builder or SQL generator, and migration strategy. Select a configured profile from the compatible family in `profiles/catalog.yaml`, then map each query shape to an index/order/pagination strategy, transaction and lock scope, batch limit, timeout, and plan-evidence command for that database. Use [the bounded SQL operation spec](references/sql-spec.md) and `scripts/generate_sql.py` to produce reviewable parameterized SQL; generation must stop when the selected profile does not support a requested capability.
 5. In `baseline`, run `workflow_gate.py --state .ddd/workflow-state.json --require performance` when a contract record exists. Then seed enough rows and skew to exercise the stated access path. Record warmup, measured duration, per-scenario concurrency, database-profile ID, dataset row count and digest, commit/profile, p50/p95/p99, throughput, error rate, connection usage, lock wait, and query-plan evidence. A benchmark without those fields is `inconclusive`; the budget comparator rejects a run whose metadata does not match the contract.
 6. Show the contract and baseline evidence to the user. When the user confirms the budgets and workload, change the contract to `status: confirmed` with the user's decision and evidence, then let the skill record the supporting snapshot mechanically. There is no second performance or baseline approval step. `$delivery-loop` implements only the recorded query shapes and adds the metric test at the same public seam. `$code-review` checks the SQL and measured evidence independently.
 7. Stop after one design, baseline, or verification result. Do not invoke delivery, repair, adapter selection, or code review automatically.
@@ -41,15 +41,15 @@ Use the bundled validators without executing commands from the contract:
 
 ```text
 python performance-loop/scripts/validate_contract.py .ddd/performance/<slice-id>.yaml --profiles-dir .ddd/performance-profiles
-python performance-loop/scripts/validate_profile.py postgresql-16 --profiles-dir .ddd/performance-profiles
+python performance-loop/scripts/validate_profile.py postgresql-18 --profiles-dir .ddd/performance-profiles
 python performance-loop/scripts/compare_budget.py .ddd/performance/<slice-id>.yaml .ddd/performance/<slice-id>.baseline.json --state .ddd/workflow-state.json --profiles-dir .ddd/performance-profiles
-python performance-loop/scripts/generate_sql.py postgresql-16 performance-loop/examples/file-entry-crud.sql.yaml --state .ddd/workflow-state.json --profiles-dir .ddd/performance-profiles
+python performance-loop/scripts/generate_sql.py postgresql-18 performance-loop/examples/file-entry-crud.sql.yaml --state .ddd/workflow-state.json --profiles-dir .ddd/performance-profiles
 python performance-loop/scripts/compare_frameworks.py performance-loop/examples/rust-database-framework-comparison.yaml .ddd/performance/rust-database-framework-comparison.results.json --adapter-profiles-dir adapter-kit/profiles
 ```
 
 ## Hard stops
 
-- Do not select a database, cache, index, ORM, or SQL dialect because a future capability might need it. Return to `$adapter-kit` for an exact profile.
+- Do not select a database, cache, index, ORM, or SQL dialect because a future capability might need it. Return to `$ddd-core` for a changed product boundary or `$adapter-kit` for a changed application component; choose the database profile only for the current approved persistence question.
 - Do not call `generate_sql.py` without the project ledger and a validated selected database profile. A profile ID on the command line cannot replace reading the profile file.
 - Do not call `compare_budget.py` or claim a performance result without a validated contract, matching profile, and reproducible baseline.
 - Do not edit a bundled profile in place to make a failing query pass. Copy it into the project's configured profile directory, pin the engine version, record the capability evidence, and obtain a new user decision when the portability or operational cost changes.

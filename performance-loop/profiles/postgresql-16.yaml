@@ -3,6 +3,11 @@ id: postgresql-16
 engine: postgresql
 version: "16"
 profile_version: "1"
+release:
+  channel: supported
+  tested_minor: "16.16"
+  support_until: "2028-11-09"
+  source: https://www.postgresql.org/support/versioning/
 identifier_quote: '"'
 parameter_style: numbered_dollar
 pagination_style: tuple

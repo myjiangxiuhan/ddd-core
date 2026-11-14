@@ -7,7 +7,7 @@ id: scaffold-kit.configuration
 
 The interaction model follows Angular CLI's schematic idea: `ng generate` exposes named, inspectable generators with options and templates, while this project keeps a separate dry-run and explicit apply step so generation cannot silently become implementation. See the [Angular CLI schematic documentation](https://angular.dev/tools/cli/schematics) for the upstream model.
 
-The project owns `.ddd/scaffold.yaml`. A profile is versioned so a generated artifact can be reviewed against the exact template contract that produced it. The generator supports inline `template` text or a repository-relative `template_file`; it performs only placeholder substitution.
+The project owns `.ddd/scaffold.yaml`. A profile is versioned so a generated artifact can be reviewed against the exact template contract that produced it. The generator supports inline `template` text or a repository-relative `template_file`; it performs only placeholder substitution. A profile may declare `components`, which are required component facts rather than a replacement for the workflow technology record.
 
 ```yaml
 schema_version: "1"
@@ -15,6 +15,10 @@ default_profile: react-antd-pro
 profiles:
   react-antd-pro:
     version: "1"
+    components:
+      - {kind: language, id: typescript, version: project-selected}
+      - {kind: framework, id: react, version: project-selected}
+      - {kind: ui_library, id: antd-pro, version: project-selected}
     aliases:
       c: component
     generators:
@@ -34,13 +38,36 @@ profiles:
                 }
 ```
 
-The same `generators` map may contain a `backend` kind. Backend generators use the selected backend adapter profile and do not require UI records. Each backend generator declares `surface: backend`, `requires_ui: false`, an explicit `requires_database` boolean, a public seam, review checks, Cargo validation commands, and files. A `requires_database: true` generator is blocked until the database profile record is selected. It may create a seam, but it may not silently pick a query layer or generate SQL outside the selected profile.
+The same `generators` map may contain a `backend` kind. Backend generators use the selected backend components or an explicit scaffold preset and do not require UI records. Each backend generator declares `surface: backend`, `requires_ui: false`, an explicit `requires_database` boolean, a public seam, review checks, language-specific validation commands, and files. A `requires_database: true` generator is blocked until the database profile record is selected. It may create a seam, but it may not silently pick a query layer or generate SQL outside the selected profile.
+
+When `components` is present, the workflow ledger may use the independent `technology_profile.components` record (`id: project-components`). Every declared component must be present with the same `kind` and `id`; `version: project-selected` accepts the version recorded by the project. Extra components are allowed, so a Go preset can require `pgx` and `sqlc` together while the project also selects a migration tool. A legacy `technology_profile.id`/`version` match remains valid for existing preset projects.
+
+For example, a Go backend preset can require the driver and query generator together:
+
+```yaml
+profiles:
+  go-echo-pgx-sqlc:
+    version: "1"
+    surface: backend
+    components:
+      - {kind: language, id: go, version: project-selected}
+      - {kind: framework, id: echo, version: project-selected}
+      - {kind: data_access, id: pgx, version: project-selected}
+      - {kind: data_access, id: sqlc, version: project-selected}
+    generators: *go_backend_generators
+```
 
 ```yaml
 profiles:
   rust-axum-sqlx:
     version: "1"
     surface: backend
+    components:
+      - {kind: language, id: rust, version: "1.95"}
+      - {kind: framework, id: axum, version: "0.8.9"}
+      - {kind: runtime, id: tokio, version: "1.54.1"}
+      - {kind: data_access, id: sqlx, version: "0.9.0"}
+      - {kind: migration, id: sqlx-cli, version: "0.9.0"}
     generators:
       backend:
         service:

@@ -1,0 +1,7 @@
+schema_version: "1"
+id: echo
+kind: framework
+version: project-selected
+selection: required
+language: go
+evidence: https://echo.labstack.com/docs

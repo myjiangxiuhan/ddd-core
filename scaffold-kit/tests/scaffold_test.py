@@ -43,6 +43,219 @@ class ScaffoldBoundaryTest(unittest.TestCase):
             self.assertEqual(profile["surface"], "backend")
             self.assertIn("backend", profile["generators"])
 
+    def test_go_scaffold_profile_declares_composable_components(self) -> None:
+        config = load_yaml(CONFIG)
+        selected, profile = choose_profile(config, "go-echo-pgx-sqlc")
+        self.assertEqual(selected, "go-echo-pgx-sqlc")
+        self.assertEqual(
+            [(item["kind"], item["id"]) for item in profile["components"]],
+            [("language", "go"), ("framework", "echo"), ("data_access", "pgx"), ("data_access", "sqlc")],
+        )
+        self.assertEqual(profile["generators"]["backend"]["service"]["validation_commands"]["check"], "go test ./...")
+
+    def test_component_matching_accepts_go_pgx_and_sqlc_and_rejects_wrong_query_layer(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="scaffold-go-components-", dir=ROOT.parent) as directory:
+            root = Path(directory)
+            ddd = root / ".ddd"
+            ddd.mkdir()
+            (ddd / "mainline.md").write_text("A reviewed Go mainline.\n", encoding="utf-8")
+            state = {
+                "schema_version": "1",
+                "control_mode": "human_led",
+                "business_artifact": ".ddd/mainline.md",
+                "decisions": [{"id": "d1", "status": "answered", "source": "user_decision", "evidence": "user"}],
+                "active_slice": {"id": "slice-1", "name": "first slice"},
+                "technology_profile": {
+                    "id": "project-components",
+                    "version": "1",
+                    "components": [
+                        {"kind": "language", "id": "go", "version": "1.25"},
+                        {"kind": "framework", "id": "echo", "version": "4.13"},
+                        {"kind": "data_access", "id": "pgx", "version": "5.7"},
+                        {"kind": "data_access", "id": "sqlc", "version": "1.29"},
+                    ],
+                },
+                "gates": {
+                    "phase": "delivery",
+                    "business_discovery": "confirmed",
+                    "domain_design": "confirmed",
+                    "slice_approval": "approved",
+                    "technology_profile": "selected",
+                    "delivery": "not_started",
+                },
+            }
+            state_path = ddd / "workflow-state.json"
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+            config = load_yaml(CONFIG)
+            _, profile = choose_profile(config, "go-echo-pgx-sqlc")
+            validate_project_gate(
+                root,
+                "go-echo-pgx-sqlc",
+                "1",
+                True,
+                requires_ui=False,
+                profile=profile,
+            )
+            state["technology_profile"]["components"][3]["id"] = "sqlx"
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+            with self.assertRaisesRegex(ConfigError, "technology components"):
+                validate_project_gate(
+                    root,
+                    "go-echo-pgx-sqlc",
+                    "1",
+                    True,
+                    requires_ui=False,
+                    profile=profile,
+                )
+
+    def test_cli_dry_run_uses_component_matched_go_profile(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="scaffold-go-cli-", dir=ROOT.parent) as directory:
+            root = Path(directory)
+            ddd = root / ".ddd"
+            ddd.mkdir()
+            (ddd / "mainline.md").write_text("A reviewed Go mainline.\n", encoding="utf-8")
+            shutil.copyfile(CONFIG, ddd / "scaffold.yaml")
+            state = {
+                "schema_version": "1",
+                "control_mode": "human_led",
+                "business_artifact": ".ddd/mainline.md",
+                "decisions": [{"id": "d1", "status": "answered", "source": "user_decision", "evidence": "user"}],
+                "active_slice": {"id": "slice-1", "name": "first slice"},
+                "technology_profile": {
+                    "id": "project-components",
+                    "version": "1",
+                    "components": [
+                        {"kind": "language", "id": "go", "version": "1.25"},
+                        {"kind": "framework", "id": "echo", "version": "4.13"},
+                        {"kind": "data_access", "id": "pgx", "version": "5.7"},
+                        {"kind": "data_access", "id": "sqlc", "version": "1.29"},
+                    ],
+                },
+                "gates": {
+                    "phase": "delivery",
+                    "business_discovery": "confirmed",
+                    "domain_design": "confirmed",
+                    "slice_approval": "approved",
+                    "technology_profile": "selected",
+                    "delivery": "not_started",
+                },
+            }
+            (ddd / "workflow-state.json").write_text(json.dumps(state), encoding="utf-8")
+            result = subprocess.run(
+                (
+                    "python",
+                    str(ROOT / "scripts" / "scaffold.py"),
+                    "generate",
+                    "backend",
+                    "service",
+                    "--profile",
+                    "go-echo-pgx-sqlc",
+                    "--name",
+                    "FileEntry",
+                    "--slice-id",
+                    "slice-1",
+                    "--target",
+                    "src/features/files",
+                    "--config",
+                    str(ddd / "scaffold.yaml"),
+                ),
+                cwd=ROOT.parent,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            plan = json.loads(result.stdout)
+            self.assertEqual(plan["mode"], "dry-run")
+            self.assertEqual(plan["profile"], "go-echo-pgx-sqlc")
+            self.assertEqual(plan["components"][2]["id"], "pgx")
+            self.assertIn("go test ./...", plan["contract"]["validation_commands"]["check"])
+            self.assertEqual(plan["actions"][0]["path"], "src/features/files/file-entry/handler.go")
+            self.assertIn("package fileEntry", plan["actions"][0]["content"])
+
+    def test_component_matching_accepts_react_antd_pro_for_ui_scaffold(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="scaffold-react-components-", dir=ROOT.parent) as directory:
+            root = Path(directory) / "project"
+            shutil.copytree(FORMAL_PROJECT, root)
+            state_path = root / ".ddd" / "workflow-state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state["technology_profile"] = {
+                "id": "project-components",
+                "version": "1",
+                "components": [
+                    {"kind": "language", "id": "typescript", "version": "5.9"},
+                    {"kind": "framework", "id": "react", "version": "19.1"},
+                    {"kind": "ui_library", "id": "antd-pro", "version": "2.8"},
+                ],
+            }
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+            config = load_yaml(CONFIG)
+            _, profile = choose_profile(config, "react-antd-pro")
+            validate_project_gate(
+                root,
+                "react-antd-pro",
+                "1",
+                True,
+                requires_ui=True,
+                profile=profile,
+            )
+            state["technology_profile"]["components"][2]["id"] = "antd"
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+            with self.assertRaisesRegex(ConfigError, "technology components"):
+                validate_project_gate(
+                    root,
+                    "react-antd-pro",
+                    "1",
+                    True,
+                    requires_ui=True,
+                    profile=profile,
+                )
+
+    def test_component_matching_rejects_exact_version_drift(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="scaffold-rust-version-", dir=ROOT.parent) as directory:
+            root = Path(directory)
+            ddd = root / ".ddd"
+            ddd.mkdir()
+            (ddd / "mainline.md").write_text("A reviewed Rust mainline.\n", encoding="utf-8")
+            state = {
+                "schema_version": "1",
+                "control_mode": "human_led",
+                "business_artifact": ".ddd/mainline.md",
+                "decisions": [{"id": "d1", "status": "answered", "source": "user_decision", "evidence": "user"}],
+                "active_slice": {"id": "slice-1", "name": "first slice"},
+                "technology_profile": {
+                    "id": "project-components",
+                    "version": "1",
+                    "components": [
+                        {"kind": "language", "id": "rust", "version": "1.94"},
+                        {"kind": "framework", "id": "axum", "version": "0.8.9"},
+                        {"kind": "runtime", "id": "tokio", "version": "1.54.1"},
+                        {"kind": "data_access", "id": "sqlx", "version": "0.9.0"},
+                        {"kind": "migration", "id": "sqlx-cli", "version": "0.9.0"},
+                    ],
+                },
+                "gates": {
+                    "phase": "delivery",
+                    "business_discovery": "confirmed",
+                    "domain_design": "confirmed",
+                    "slice_approval": "approved",
+                    "technology_profile": "selected",
+                    "delivery": "not_started",
+                },
+            }
+            state_path = ddd / "workflow-state.json"
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+            config = load_yaml(CONFIG)
+            _, profile = choose_profile(config, "rust-axum-sqlx")
+            with self.assertRaisesRegex(ConfigError, "technology components"):
+                validate_project_gate(
+                    root,
+                    "rust-axum-sqlx",
+                    "1",
+                    True,
+                    requires_ui=False,
+                    profile=profile,
+                )
+
     def test_backend_gate_does_not_require_ui_records(self) -> None:
         fields = required_gate_fields()
         self.assertNotIn("ui_system", fields)

@@ -1,0 +1,9 @@
+schema_version: "1"
+id: element-plus
+kind: ui_library
+version: project-selected
+selection: required
+language: typescript
+framework: vue
+variant: standard
+evidence: https://element-plus.org/en-US/component/overview.html

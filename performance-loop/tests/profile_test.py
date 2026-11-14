@@ -46,18 +46,50 @@ UPSERT_SPEC = {
 
 class DatabaseProfileTest(unittest.TestCase):
     def test_all_bundled_profiles_validate(self) -> None:
-        for profile_id in ("postgresql-16", "mysql-8.4", "sqlite-3.45", "sqlserver-2022"):
+        for profile_id in (
+            "postgresql-18",
+            "postgresql-17",
+            "postgresql-16",
+            "postgresql-15",
+            "postgresql-14",
+            "mysql-9.7",
+            "mysql-8.4",
+            "sqlite-3.53",
+            "sqlite-3.45",
+            "sqlserver-2025",
+            "sqlserver-2022",
+        ):
             profile = load_profile(profile_id)
             self.assertEqual(profile["id"], profile_id)
             self.assertIn("upsert", profile["capabilities"])
             self.assertIn("keyset_pagination", profile["capabilities"])
             self.assertIn("plan", profile["capabilities"])
 
+    def test_current_postgresql_profile_records_release_metadata(self) -> None:
+        profile = load_profile("postgresql-18")
+        self.assertEqual(profile["release"]["channel"], "current")
+        self.assertEqual(profile["release"]["tested_minor"], "18.7")
+
+    def test_catalog_current_profiles_are_bundled(self) -> None:
+        catalog = yaml.safe_load((ROOT / "profiles" / "catalog.yaml").read_text(encoding="utf-8"))
+        for family in catalog["families"].values():
+            current = family["current_profile"]
+            entry = next(item for item in family["profiles"] if item["id"] == current)
+            self.assertEqual(entry["status"], "bundled")
+            self.assertTrue((ROOT / "profiles" / f"{current}.yaml").is_file())
+
     def test_list_generation_uses_each_database_dialect(self) -> None:
         expected = {
+            "postgresql-18": ('"file_entries"', "$1", "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)"),
+            "postgresql-17": ('"file_entries"', "$1", "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)"),
             "postgresql-16": ('"file_entries"', "$1", "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)"),
+            "postgresql-15": ('"file_entries"', "$1", "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)"),
+            "postgresql-14": ('"file_entries"', "$1", "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)"),
+            "mysql-9.7": ("`file_entries`", "?", "EXPLAIN ANALYZE"),
             "mysql-8.4": ("`file_entries`", "?", "EXPLAIN ANALYZE"),
+            "sqlite-3.53": ('"file_entries"', "?", "EXPLAIN QUERY PLAN"),
             "sqlite-3.45": ('"file_entries"', "?", "EXPLAIN QUERY PLAN"),
+            "sqlserver-2025": ("[file_entries]", "@p1", "SET STATISTICS IO, TIME ON"),
             "sqlserver-2022": ("[file_entries]", "@p1", "SET STATISTICS IO, TIME ON"),
         }
         for profile_id, (table_marker, parameter_marker, plan_marker) in expected.items():
@@ -127,7 +159,14 @@ class DatabaseProfileTest(unittest.TestCase):
 
     def test_each_database_profile_validates_a_matching_performance_contract(self) -> None:
         cases = {
+            "postgresql-18": ("postgresql", "18"),
+            "postgresql-17": ("postgresql", "17"),
             "postgresql-16": ("postgresql", "16"),
+            "postgresql-15": ("postgresql", "15"),
+            "postgresql-14": ("postgresql", "14"),
+            "mysql-9.7": ("mysql", "9.7"),
+            "sqlite-3.53": ("sqlite", "3.53"),
+            "sqlserver-2025": ("sqlserver", "2025"),
             "mysql-8.4": ("mysql", "8.4"),
             "sqlite-3.45": ("sqlite", "3.45"),
             "sqlserver-2022": ("sqlserver", "2022"),

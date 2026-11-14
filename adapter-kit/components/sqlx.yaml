@@ -1,0 +1,18 @@
+schema_version: "1"
+id: sqlx
+kind: data_access
+version: "0.9.0"
+language: rust
+query_model: compile_time_checked_sql
+supported_database_engines:
+  - postgresql
+  - mysql
+  - sqlite
+features:
+  runtime: runtime-tokio-rustls
+  postgres: postgres
+  mysql: mysql
+  sqlite: sqlite
+  macros: macros
+  migrate: migrate
+evidence: https://github.com/transact-rs/sqlx/releases/tag/v0.9.0

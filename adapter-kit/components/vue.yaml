@@ -1,0 +1,7 @@
+schema_version: "1"
+id: vue
+kind: framework
+version: project-selected
+selection: required
+language: typescript
+evidence: https://vuejs.org/guide/introduction.html

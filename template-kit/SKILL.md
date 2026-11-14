@@ -16,7 +16,7 @@ python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --requ
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require ui-practices
 ```
 
-A non-zero result is a hard stop when an extraction or registration targets an active UI slice. A template must target the selected technology profile when it is registered for scaffolding. If the source is an open-source project, use a pinned tag, release, commit, or archive and record the license and attribution requirements before extracting anything.
+A non-zero result is a hard stop when an extraction or registration targets an active UI slice. A template must target the selected technology components or explicit UI scaffold preset when it is registered for scaffolding. If the source is an open-source project, use a pinned tag, release, commit, or archive and record the license and attribution requirements before extracting anything.
 
 ## Modes
 

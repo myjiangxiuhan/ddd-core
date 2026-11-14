@@ -86,9 +86,8 @@ def validate_matrix(matrix: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(controls.get(section), dict):
             raise ComparisonError(f"matrix.controls.{section} must be an object")
     db = controls["database"]
-    for field in ("engine", "version", "performance_profile", "schema_digest", "seed_digest", "environment_digest"):
-        if field in db:
-            non_empty(db.get(field), f"matrix.controls.database.{field}")
+    for field in ("engine", "version", "performance_profile"):
+        non_empty(db.get(field), f"matrix.controls.database.{field}")
     non_empty(controls.get("schema_digest"), "matrix.controls.schema_digest")
     non_empty(controls.get("seed_digest"), "matrix.controls.seed_digest")
     non_empty(controls.get("environment_digest"), "matrix.controls.environment_digest")
@@ -168,10 +167,17 @@ def validate_adapter_bindings(matrix: dict[str, Any], profiles_dir: Path) -> Non
             raise ComparisonError(f"adapter profile {framework_id} does not match Axum controls")
         if profile["runtime"] != runtime_controls:
             raise ComparisonError(f"adapter profile {framework_id} does not match Tokio controls")
-        if {
-            "engine": profile["database"]["engine"],
-            "version": profile["database"]["version"],
-            "performance_profile": profile["database"]["performance_profile"],
+        database = profile["database"]
+        if database.get("selection", "exact") == "project":
+            if database.get("engine") != database_controls["engine"]:
+                raise ComparisonError(f"adapter profile {framework_id} does not support database engine {database_controls['engine']}")
+            prefix = database.get("profile_prefix")
+            if not isinstance(prefix, str) or not database_controls["performance_profile"].startswith(prefix):
+                raise ComparisonError(f"adapter profile {framework_id} does not support database profile {database_controls['performance_profile']}")
+        elif {
+            "engine": database.get("engine"),
+            "version": database.get("version"),
+            "performance_profile": database.get("performance_profile"),
         } != database_controls:
             raise ComparisonError(f"adapter profile {framework_id} does not match database controls")
         if profile["driver"]["name"] != framework["driver"] or profile["driver"]["version"] != framework["driver_version"]:

@@ -19,6 +19,7 @@ from record_utils import digest_file, digest_json  # type: ignore  # noqa: E402
 PLACEHOLDER_RE = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
 VALID_AXES = {"standards", "spec", "ddd", "ui", "custom"}
 TEMPLATE_SOURCE_KINDS = {"oss", "local", "design-reference", "user"}
+COMPONENT_KINDS = {"language", "framework", "runtime", "data_access", "migration", "ui_library"}
 
 
 class ConfigError(ValueError):
@@ -88,6 +89,62 @@ def load_json_record(path: Path, label: str) -> dict[str, Any]:
     return value
 
 
+def normalize_component_specs(value: Any, label: str) -> list[dict[str, str]]:
+    if not isinstance(value, list) or not value:
+        raise ConfigError(f"{label} must be a non-empty array")
+    result: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for index, item in enumerate(value):
+        if not isinstance(item, dict):
+            raise ConfigError(f"{label}[{index}] must be an object")
+        fields: dict[str, str] = {}
+        for field in ("kind", "id", "version"):
+            raw = item.get(field)
+            if not isinstance(raw, str) or not raw.strip():
+                raise ConfigError(f"{label}[{index}].{field} must be a non-empty string")
+            fields[field] = raw.strip()
+        if fields["kind"] not in COMPONENT_KINDS:
+            raise ConfigError(f"{label}[{index}].kind is not supported: {fields['kind']}")
+        key = (fields["kind"], fields["id"])
+        if key in seen:
+            raise ConfigError(f"{label} contains duplicate component: {fields['kind']}:{fields['id']}")
+        seen.add(key)
+        result.append(fields)
+    return result
+
+
+def profile_components(profile: dict[str, Any]) -> list[dict[str, str]] | None:
+    declared = profile.get("components")
+    if declared is None:
+        return None
+    return normalize_component_specs(declared, "profile.components")
+
+
+def technology_matches_components(technology: dict[str, Any], profile: dict[str, Any]) -> bool:
+    expected = profile_components(profile)
+    if expected is None:
+        return False
+    actual_raw = technology.get("components")
+    if not isinstance(actual_raw, list) or not actual_raw:
+        return False
+    try:
+        actual = normalize_component_specs(actual_raw, "workflow technology_profile.components")
+    except ConfigError:
+        return False
+    for requirement in expected:
+        matches = [
+            item
+            for item in actual
+            if item["kind"] == requirement["kind"] and item["id"] == requirement["id"]
+        ]
+        if not matches:
+            return False
+        expected_version = requirement["version"]
+        if expected_version != "project-selected" and all(item["version"] != expected_version for item in matches):
+            return False
+    return True
+
+
 def choose_profile(config: dict[str, Any], profile_id: str | None) -> tuple[str, dict[str, Any]]:
     selected = profile_id or config.get("default_profile")
     if not isinstance(selected, str) or not selected.strip():
@@ -99,6 +156,7 @@ def choose_profile(config: dict[str, Any], profile_id: str | None) -> tuple[str,
         raise ConfigError(f"profile {selected} must declare a version")
     if not isinstance(profile.get("generators"), dict) or not profile["generators"]:
         raise ConfigError(f"profile {selected} must declare generators")
+    profile_components(profile)
     return selected, profile
 
 
@@ -438,6 +496,7 @@ def validate_project_gate(
     *,
     requires_ui: bool = True,
     requires_database: bool = False,
+    profile: dict[str, Any] | None = None,
 ) -> None:
     if not managed_project:
         return
@@ -474,7 +533,16 @@ def validate_project_gate(
     if not isinstance(active_slice, dict) or not isinstance(active_slice.get("id"), str) or not active_slice["id"].strip():
         raise ConfigError("workflow ledger active_slice must contain an id")
     technology = state.get("technology_profile")
-    if not isinstance(technology, dict) or technology.get("id") != profile_id or str(technology.get("version")) != profile_version:
+    legacy_match = (
+        isinstance(technology, dict)
+        and "components" not in technology
+        and technology.get("id") == profile_id
+        and str(technology.get("version")) == profile_version
+    )
+    component_match = isinstance(technology, dict) and profile is not None and technology_matches_components(technology, profile)
+    if not legacy_match and not component_match:
+        if profile is not None and profile_components(profile) is not None:
+            raise ConfigError("workflow ledger technology components do not match scaffold profile")
         raise ConfigError("workflow ledger technology_profile does not match scaffold profile")
     business_artifact = state.get("business_artifact")
     if not isinstance(business_artifact, str) or not business_artifact.strip() or not safe_relative(root, business_artifact).is_file():
@@ -534,7 +602,13 @@ def list_generators(profile_id: str, profile: dict[str, Any]) -> dict[str, Any]:
                     "source_kinds": [item.get("kind") for item in sources] if sources else [],
                 })
             rows.append(row)
-    return {"ok": True, "profile": profile_id, "profile_version": profile["version"], "generators": rows}
+    return {
+        "ok": True,
+        "profile": profile_id,
+        "profile_version": profile["version"],
+        "components": profile.get("components", []),
+        "generators": rows,
+    }
 
 
 def validate_generators(
@@ -622,6 +696,7 @@ def build_plan(args: argparse.Namespace, config_path: Path, profile_id: str, pro
         "ok": True,
         "profile": profile_id,
         "profile_version": profile["version"],
+        "components": profile.get("components", []),
         "generator": f"{args.kind}:{args.generator}",
         "name": args.name,
         "target": str(target.relative_to(root)).replace("\\", "/") or ".",
@@ -742,6 +817,7 @@ def main() -> int:
             managed_project,
             requires_ui=requires_ui,
             requires_database=requires_database,
+            profile=profile,
         )
         if args.command == "check":
             validate_generators(profile, profile_id, root)

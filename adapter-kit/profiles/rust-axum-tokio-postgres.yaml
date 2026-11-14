@@ -20,9 +20,10 @@ http:
 serialization:
   serde: "1"
 database:
+  selection: project
   engine: postgresql
-  version: "16"
-  performance_profile: postgresql-16
+  profile_prefix: postgresql-
+  profile_catalog: performance-loop/profiles/catalog.yaml
 driver:
   name: tokio-postgres
   version: "0.7.18"

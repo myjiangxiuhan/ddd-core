@@ -65,9 +65,10 @@ For PostgreSQL, the adapter may deliberately use features such as `RETURNING`, `
 
 ```yaml
 database:
-  adapter_profile: postgresql-16
+  adapter_profile: postgresql-18
   engine: postgresql
-  version: "16"
+  version: "18"
+  tested_minor: "18.7"
   driver: pgx
   query_layer: sqlc
   capabilities:

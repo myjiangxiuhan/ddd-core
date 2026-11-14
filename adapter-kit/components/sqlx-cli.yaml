@@ -1,0 +1,16 @@
+schema_version: "1"
+id: sqlx-cli
+kind: migration
+version: "0.9.0"
+language: rust
+driver: sqlx
+supported_database_engines:
+  - postgresql
+  - mysql
+  - sqlite
+commands:
+  install: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,postgres
+  create: sqlx migrate add --source migrations <name>
+  apply: sqlx migrate run --source migrations
+  verify: sqlx migrate info --source migrations
+evidence: https://github.com/transact-rs/sqlx/blob/v0.9.0/sqlx-cli/README.md

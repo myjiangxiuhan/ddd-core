@@ -1,0 +1,10 @@
+schema_version: "1"
+id: refinery
+kind: migration
+version: "0.9.2"
+language: rust
+supported_database_engines:
+  - postgresql
+driver_features:
+  - tokio-postgres
+evidence: https://github.com/rust-db/refinery/releases/tag/v0.9.2

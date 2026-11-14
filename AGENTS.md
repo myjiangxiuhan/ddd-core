@@ -36,13 +36,13 @@ Every skill must follow [the skill contract](ddd-core/rules/skill-contract.md). 
 - `performance-loop`: select a version-pinned database profile, generate bounded database-specific SQL, and record one slice performance contract and reproducible metric baseline when the slice needs them.
 - `to-spec`: synthesize confirmed decisions into a reviewable handoff spec.
 - `to-slices`: plan vertical slices and explicit blockers from a confirmed spec.
-- `adapter-kit`: after slice approval, let the user select or confirm one exact technology profile; do not implement it.
+- `adapter-kit`: after slice approval, let the user select or confirm independent technology components; database server profiles remain separate; do not implement them.
 - `ui-system`: define and confirm project tokens, themes, responsive layout, accessibility, and visual-state rules; do not implement them.
 - `ui-practices`: collect version-pinned React, Vue, Angular, and UI-library guidance and confirm component-first practices; do not implement them.
 - `ui-architecture`: collect primary-source UI-library evidence and confirm one component composition plan for a UI slice.
 - `scaffold-kit`: inspect and explicitly apply one project-configured, `ng generate`-style UI or backend artifact generator; UI and backend use separate checks.
 - `template-kit`: inspect pinned references and create or extract confirmed clean-room UI templates with provenance; do not copy source code.
-- `delivery-loop`: after a selected profile and active slice, implement and verify one active slice, using database, performance, UI, and scaffold records as supporting evidence when present, then stop.
+- `delivery-loop`: after selected application components or an explicit preset and an active slice, implement and verify one active slice, using database, performance, UI, and scaffold records as supporting evidence when present, then stop.
 - `repair-loop`: reproduce, fix, and regression-test one confirmed failure, then stop.
 - `code-review`: review one verified fixed-point diff on separate Standards, Spec, DDD, UI, and Custom axes; never edit source.
 - `retro-loop`: turn session failures into approved deterministic checks or rules.

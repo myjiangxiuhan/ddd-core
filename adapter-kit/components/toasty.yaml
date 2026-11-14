@@ -1,0 +1,12 @@
+schema_version: "1"
+id: toasty
+kind: data_access
+version: "0.11.0"
+language: rust
+query_model: generated_async_orm
+supported_database_engines:
+  - postgresql
+maturity: experimental
+package: toasty-driver-postgresql
+package_version: "0.8.0"
+evidence: https://github.com/tokio-rs/toasty/releases/tag/toasty-v0.11.0

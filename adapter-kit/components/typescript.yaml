@@ -1,0 +1,6 @@
+schema_version: "1"
+id: typescript
+kind: language
+version: project-selected
+selection: required
+evidence: https://www.typescriptlang.org/docs/

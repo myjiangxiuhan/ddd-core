@@ -15,7 +15,7 @@ Use these exact words in the ledger and reports. Do not replace them with vague 
 | `draft` | A design or record exists but the user has not confirmed it | permission to implement |
 | `confirmed` | The user confirmed or corrected the domain design | approval of code or technology |
 | `approved` | The user approved one named active slice | approval of the whole project |
-| `selected` | The user explicitly chose one exact technology profile | permission to add another technology |
+| `selected` | The user explicitly chose the required technology components or an explicit compatibility preset | permission to add another technology |
 | `not_started` | An optional UI foundation, UI plan, or review has not begun | permission to skip a required confirmed plan |
 | `deferred` | A capability is recorded for later consideration | a hidden implementation requirement |
 | `pending` | Evidence or a user decision is missing | an agent-selected default |

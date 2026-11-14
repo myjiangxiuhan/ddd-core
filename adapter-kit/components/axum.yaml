@@ -1,0 +1,6 @@
+schema_version: "1"
+id: axum
+kind: framework
+version: "0.8.9"
+language: rust
+evidence: https://github.com/tokio-rs/axum/releases/tag/axum-v0.8.9

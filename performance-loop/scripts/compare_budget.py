@@ -77,8 +77,11 @@ def compare(
     if not isinstance(environment, dict) or not environment:
         raise ContractError("baseline.environment must be a non-empty object")
     if profile_override is not None:
-        expected_database = f"{profile_override.get('engine')}:{profile_override.get('version')}"
-        if environment.get("database") != expected_database:
+        expected_databases = {f"{profile_override.get('engine')}:{profile_override.get('version')}"}
+        release = profile_override.get("release")
+        if isinstance(release, dict) and isinstance(release.get("tested_minor"), str) and release["tested_minor"].strip():
+            expected_databases.add(f"{profile_override.get('engine')}:{release['tested_minor']}")
+        if environment.get("database") not in expected_databases:
             raise ContractError("baseline.environment.database does not match the selected database profile")
     workload = contract["workload"]
     for field in ("warmup_seconds", "measurement_seconds"):

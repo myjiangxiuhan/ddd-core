@@ -1,0 +1,82 @@
+schema_version: "1"
+id: performance.database-profile-catalog
+last_verified: "2026-11-15"
+policy:
+  application_profiles_select_families: true
+  projects_select_exact_profiles: true
+  minor_releases: "use the current vendor patch within the selected major line and record the tested minor in the contract/baseline"
+  new_major: "add a profile and evidence before using version-specific capabilities"
+families:
+  postgresql:
+    current_profile: postgresql-18
+    source: https://www.postgresql.org/support/versioning/
+    profiles:
+      - id: postgresql-18
+        major: "18"
+        channel: current
+        tested_minor: "18.7"
+        support_until: "2030-11-14"
+        status: bundled
+      - id: postgresql-17
+        major: "17"
+        channel: supported
+        tested_minor: "17.12"
+        support_until: "2029-11-08"
+        status: bundled
+      - id: postgresql-16
+        major: "16"
+        channel: supported
+        tested_minor: "16.16"
+        support_until: "2028-11-09"
+        status: bundled
+      - id: postgresql-15
+        major: "15"
+        channel: supported
+        tested_minor: "15.20"
+        support_until: "2027-11-11"
+        status: bundled
+      - id: postgresql-14
+        major: "14"
+        channel: eol-compatibility
+        tested_minor: "14.25"
+        support_until: "2026-11-12"
+        status: bundled
+  mysql:
+    current_profile: mysql-9.7
+    source: https://dev.mysql.com/doc/relnotes/mysql/9.7/en/
+    profiles:
+      - id: mysql-9.7
+        major: "9.7"
+        channel: current-lts
+        tested_minor: "9.7.4"
+        status: bundled
+      - id: mysql-8.4
+        major: "8.4"
+        channel: lts
+        status: bundled
+  sqlite:
+    current_profile: sqlite-3.53
+    source: https://www.sqlite.org/chronology.html
+    profiles:
+      - id: sqlite-3.53
+        major: "3.53"
+        channel: current
+        tested_minor: "3.53.6"
+        status: bundled
+      - id: sqlite-3.45
+        major: "3.45"
+        channel: compatibility
+        status: bundled
+  sqlserver:
+    current_profile: sqlserver-2025
+    source: https://learn.microsoft.com/en-us/lifecycle/products/sql-server-2025
+    profiles:
+      - id: sqlserver-2025
+        major: "2025"
+        channel: current
+        tested_minor: "17.0.5035.5"
+        status: bundled
+      - id: sqlserver-2022
+        major: "2022"
+        channel: supported
+        status: bundled

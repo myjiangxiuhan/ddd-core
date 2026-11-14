@@ -16,7 +16,7 @@ import yaml
 REPO = Path(__file__).resolve().parents[2]
 WORKFLOW = REPO / "ddd-core" / "scripts" / "workflow_gate.py"
 PERFORMANCE = REPO / "performance-loop"
-PROFILE_SOURCE = PERFORMANCE / "profiles" / "postgresql-16.yaml"
+PROFILE_SOURCE = PERFORMANCE / "profiles" / "postgresql-18.yaml"
 SQL_SPEC_SOURCE = PERFORMANCE / "examples" / "file-entry-crud.sql.yaml"
 
 
@@ -30,7 +30,7 @@ class DatabaseGateRegressionTest(unittest.TestCase):
         self.attacker_profile_dir = ddd / "attacker-profiles"
         self.attacker_profile_dir.mkdir()
         (ddd / "mainline.md").write_text("A database-backed slice mainline.\n", encoding="utf-8")
-        self.profile_path = ddd / "performance-profiles" / "postgresql-16.yaml"
+        self.profile_path = ddd / "performance-profiles" / "postgresql-18.yaml"
         shutil.copyfile(PROFILE_SOURCE, self.profile_path)
         self.contract_path = ddd / "performance" / "admin-shell-template.yaml"
         contract = yaml.safe_load((PERFORMANCE / "examples" / "file-entry-crud.yaml").read_text(encoding="utf-8"))
@@ -53,11 +53,11 @@ class DatabaseGateRegressionTest(unittest.TestCase):
                     "contract_id": contract["id"],
                     "slice_id": "admin-shell-template",
                     "profile": {"id": "go-echo-pgx", "version": "1"},
-                    "database_profile": "postgresql-16",
+                    "database_profile": "postgresql-18",
                     "commit": "test-commit",
                     "dataset_digest": "test-dataset",
                     "dataset_rows": 100000,
-                    "environment": {"database": "postgresql:16", "host": "isolated"},
+                    "environment": {"database": "postgresql:18", "host": "isolated"},
                     "warmup_seconds": 30,
                     "measurement_seconds": 60,
                     "scenarios": {
@@ -143,18 +143,18 @@ class DatabaseGateRegressionTest(unittest.TestCase):
         self.transition(
             "select-database-profile",
             "--database-profile-id",
-            "postgresql-16",
+            "postgresql-18",
             "--database-profile-version",
-            "16",
+            "18",
             "--database-profile-path",
-            ".ddd/performance-profiles/postgresql-16.yaml",
+            ".ddd/performance-profiles/postgresql-18.yaml",
         )
 
     def record_performance(self) -> None:
         self.select_database()
         self.transition("record-performance", "--performance-record", ".ddd/performance/admin-shell-template.yaml")
 
-    def sql_command(self, profile: str = "postgresql-16", *extra: str) -> subprocess.CompletedProcess[str]:
+    def sql_command(self, profile: str = "postgresql-18", *extra: str) -> subprocess.CompletedProcess[str]:
         return self.run_cmd(
             str(PERFORMANCE / "scripts" / "generate_sql.py"),
             profile,
@@ -261,7 +261,7 @@ class DatabaseGateRegressionTest(unittest.TestCase):
 
     def test_profile_directory_substitution_is_rejected(self) -> None:
         self.select_database()
-        result = self.sql_command("postgresql-16", "--profiles-dir", str(self.attacker_profile_dir))
+        result = self.sql_command("postgresql-18", "--profiles-dir", str(self.attacker_profile_dir))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("--profiles-dir", result.stdout)
 

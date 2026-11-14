@@ -1,0 +1,11 @@
+schema_version: "1"
+id: sqlc
+kind: data_access
+version: project-selected
+selection: required
+language: go
+supported_database_engines:
+  - postgresql
+  - mysql
+  - sqlite
+evidence: https://docs.sqlc.dev/

@@ -1,0 +1,6 @@
+schema_version: "1"
+id: go
+kind: language
+version: project-selected
+selection: required
+evidence: https://go.dev/doc/devel/release

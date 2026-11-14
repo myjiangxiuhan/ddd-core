@@ -1,0 +1,7 @@
+schema_version: "1"
+id: angular
+kind: framework
+version: project-selected
+selection: required
+language: typescript
+evidence: https://angular.dev/overview

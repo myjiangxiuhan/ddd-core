@@ -23,9 +23,10 @@ profile:
   id: go-echo-pgx
   version: "1"
   database:
-    adapter_profile: postgresql-16
+    adapter_profile: postgresql-18
     engine: postgresql
-    version: "16"
+    version: "18"
+    tested_minor: "18.7"
     driver: pgx
     query_layer: sqlc
 workload:
@@ -65,11 +66,11 @@ sql:
     timeout_ms: 500
     plan_evidence: .ddd/performance/plans/list-root-entries.json
     database_mapping:
-      profile: postgresql-16
+      profile: postgresql-18
       capabilities: [keyset_pagination, plan]
       native_features: ["PostgreSQL: partial/composite index", "PostgreSQL: EXPLAIN (ANALYZE, BUFFERS)"]
       fallback_or_incompatibility: []
-      evidence: ["PostgreSQL 16 query-plan capture on the isolated benchmark dataset"]
+      evidence: ["PostgreSQL 18.7 query-plan capture on the isolated benchmark dataset"]
 baseline:
   status: pending # pending | inconclusive | passed | failed
   result: .ddd/performance/file-entry-crud.baseline.json
@@ -80,7 +81,7 @@ baseline:
 - `decisions` are user-owned. A recommendation such as keyset pagination stays `agent_recommendation` until the user confirms the consequence.
 - `workload.dataset` must describe cardinality and skew, not only a row count. A query that is fast at 100 rows can be unusable at the contracted cardinality.
 - Every scenario has an explicit budget. At minimum, use `p95_ms`, `p99_ms`, `error_rate_percent`, and either `target_rps` or a documented batch/throughput target.
-- Every SQL entry names its access path, selected projection, pagination, transaction, lock, timeout, and plan evidence. `database_mapping` names the selected profile, supported capability names, vendor-native features, and the reason when the mapping cannot use one.
+- Every SQL entry names its access path, selected projection, pagination, transaction, lock, timeout, and plan evidence. `database_mapping` names the selected exact profile, supported capability names, vendor-native features, and the reason when the mapping cannot use one.
 - Every SQL entry names an index or explicitly names the primary-key/access-path choice. A confirmed database-backed entry must include non-empty native-feature evidence and a non-empty `database_mapping.evidence` list; a draft may leave the feature list pending but must preserve the mapping shape.
 - A confirmed contract must have `status: confirmed`, a non-empty `seam`, a selected profile with `adapter_profile`, engine/version/driver/query layer, at least one `user_decision`, and a budgeted scenario for every SQL entry.
 

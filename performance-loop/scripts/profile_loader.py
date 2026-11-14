@@ -62,6 +62,17 @@ def validate_profile(value: dict[str, Any]) -> dict[str, Any]:
         raise ProfileError(f"engine is not supported: {engine}")
     non_empty_string(value.get("version"), "version")
     non_empty_string(value.get("profile_version"), "profile_version")
+    release = value.get("release")
+    if release is not None:
+        if not isinstance(release, dict):
+            raise ProfileError("release must be an object")
+        non_empty_string(release.get("channel"), "release.channel")
+        non_empty_string(release.get("tested_minor"), "release.tested_minor")
+        if "support_until" in release:
+            non_empty_string(release.get("support_until"), "release.support_until")
+        source = non_empty_string(release.get("source"), "release.source")
+        if not source.startswith("https://"):
+            raise ProfileError("release.source must be an HTTPS URL")
     parameter_style = non_empty_string(value.get("parameter_style"), "parameter_style")
     if parameter_style not in PARAMETER_STYLES:
         raise ProfileError(f"parameter_style is not supported: {parameter_style}")

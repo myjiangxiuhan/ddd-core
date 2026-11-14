@@ -263,8 +263,11 @@ def baseline_record_from_file(root: Path, relative: str, state: dict[str, Any]) 
     contract_database = contract_profile.get("database")
     if not isinstance(contract_database, dict):
         raise ValueError("performance contract database profile is missing")
-    expected_database = f"{contract_database.get('engine')}:{contract_database.get('version')}"
-    if value["environment"].get("database") != expected_database:
+    expected_databases = {f"{contract_database.get('engine')}:{contract_database.get('version')}"}
+    release = current_profile.get("release")
+    if isinstance(release, dict) and isinstance(release.get("tested_minor"), str) and release["tested_minor"].strip():
+        expected_databases.add(f"{contract_database.get('engine')}:{release['tested_minor']}")
+    if value["environment"].get("database") not in expected_databases:
         raise ValueError("baseline.environment.database does not match the performance contract database")
     baseline_profile = value.get("profile")
     if (
@@ -514,6 +517,25 @@ def require_evidence(args: argparse.Namespace) -> str:
     return f"mechanical transition: {args.transition}"
 
 
+def parse_components(raw_values: list[str] | None) -> list[dict[str, str]]:
+    if not raw_values:
+        return []
+    components: list[dict[str, str]] = []
+    singleton_kinds = {"language", "framework", "runtime", "ui_library"}
+    seen_kinds: set[str] = set()
+    for raw in raw_values:
+        parts = raw.split(":", 2)
+        if len(parts) != 3 or any(not part.strip() for part in parts):
+            raise ValueError("--component must use kind:id:version")
+        kind, component_id, version = (part.strip() for part in parts)
+        if kind in singleton_kinds and kind in seen_kinds:
+            raise ValueError(f"only one component may be selected for kind: {kind}")
+        if kind in singleton_kinds:
+            seen_kinds.add(kind)
+        components.append({"kind": kind, "id": component_id, "version": version})
+    return components
+
+
 def apply_transition(state: dict[str, Any], args: argparse.Namespace, state_path: Path | None = None) -> str:
     transition = args.transition
     gates = require_object(state, "gates")
@@ -575,9 +597,18 @@ def apply_transition(state: dict[str, Any], args: argparse.Namespace, state_path
             raise ValueError("domain design and slice approval must be complete before select-profile")
         if gates.get("technology_profile") != "pending":
             raise ValueError("technology_profile must be pending before select-profile")
-        if not (args.profile_id or "").strip() or not (args.profile_version or "").strip():
-            raise ValueError("--profile-id and --profile-version are required for select-profile")
-        state["technology_profile"] = {"id": args.profile_id.strip(), "version": args.profile_version.strip()}
+        components = parse_components(args.component)
+        if components:
+            profile_id = (args.profile_id or "project-components").strip()
+            profile_version = (args.profile_version or "1").strip()
+        else:
+            if not (args.profile_id or "").strip() or not (args.profile_version or "").strip():
+                raise ValueError("--profile-id and --profile-version are required unless --component is used")
+            profile_id = args.profile_id.strip()
+            profile_version = args.profile_version.strip()
+        state["technology_profile"] = {"id": profile_id, "version": profile_version}
+        if components:
+            state["technology_profile"]["components"] = components
         gates.update({"technology_profile": "selected", "phase": "delivery"})
     elif transition == "select-database-profile":
         reason = check(state, "database-profile")
@@ -671,6 +702,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--requires-database", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--profile-id")
     parser.add_argument("--profile-version")
+    parser.add_argument("--component", action="append", help="independent technology component kind:id:version; repeat per kind")
     parser.add_argument("--database-profile-id")
     parser.add_argument("--database-profile-version")
     parser.add_argument("--database-profile-path")

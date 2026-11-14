@@ -1,0 +1,9 @@
+schema_version: "1"
+id: ant-design-vue
+kind: ui_library
+version: project-selected
+selection: required
+language: typescript
+framework: vue
+variant: standard
+evidence: https://antdv.com/components/overview

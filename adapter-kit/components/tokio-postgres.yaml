@@ -1,0 +1,13 @@
+schema_version: "1"
+id: tokio-postgres
+kind: data_access
+version: "0.7.18"
+language: rust
+query_model: hand_written_parameterized_sql
+supported_database_engines:
+  - postgresql
+features:
+  - with-uuid-1
+  - with-time-0_3
+  - with-serde_json-1
+evidence: https://github.com/rust-postgres/rust-postgres/releases/tag/tokio-postgres-v0.7.18

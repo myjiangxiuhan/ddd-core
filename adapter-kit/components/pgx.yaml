@@ -1,0 +1,9 @@
+schema_version: "1"
+id: pgx
+kind: data_access
+version: project-selected
+selection: required
+language: go
+supported_database_engines:
+  - postgresql
+evidence: https://github.com/jackc/pgx

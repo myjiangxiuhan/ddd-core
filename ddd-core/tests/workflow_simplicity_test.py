@@ -93,6 +93,87 @@ class WorkflowSimplicityTest(unittest.TestCase):
             for field in ("ui_system", "ui_practices", "ui_design"):
                 self.assertNotIn(field, updated["gates"])
 
+    def test_select_profile_can_record_independent_components(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="workflow-components-", dir=ROOT) as directory:
+            project = Path(directory) / "project"
+            shutil.copytree(FORMAL_PROJECT, project)
+            state_path = project / ".ddd" / "workflow-state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state["gates"]["technology_profile"] = "pending"
+            state["gates"]["phase"] = "technology"
+            state.pop("technology_profile", None)
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+            result = subprocess.run(
+                (
+                    "python",
+                    str(WORKFLOW),
+                    "--state",
+                    str(state_path),
+                    "--transition",
+                    "select-profile",
+                    "--component",
+                    "language:rust:1.95",
+                    "--component",
+                    "framework:axum:0.8.9",
+                    "--component",
+                    "runtime:tokio:1.54.1",
+                    "--component",
+                    "data_access:sqlx:0.9.0",
+                    "--evidence",
+                    "user selected independent application components",
+                ),
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            updated = json.loads(state_path.read_text(encoding="utf-8"))
+            self.assertEqual(updated["technology_profile"]["id"], "project-components")
+            self.assertEqual(
+                [item["id"] for item in updated["technology_profile"]["components"]],
+                ["rust", "axum", "tokio", "sqlx"],
+            )
+
+    def test_select_profile_allows_composable_go_data_access_components(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="workflow-go-components-", dir=ROOT) as directory:
+            project = Path(directory) / "project"
+            shutil.copytree(FORMAL_PROJECT, project)
+            state_path = project / ".ddd" / "workflow-state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state["gates"]["technology_profile"] = "pending"
+            state["gates"]["phase"] = "technology"
+            state.pop("technology_profile", None)
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+            result = subprocess.run(
+                (
+                    "python",
+                    str(WORKFLOW),
+                    "--state",
+                    str(state_path),
+                    "--transition",
+                    "select-profile",
+                    "--component",
+                    "language:go:project-selected",
+                    "--component",
+                    "framework:echo:project-selected",
+                    "--component",
+                    "data_access:pgx:project-selected",
+                    "--component",
+                    "data_access:sqlc:project-selected",
+                    "--evidence",
+                    "user selected pgx and sqlc as separate data-access components",
+                ),
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            updated = json.loads(state_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                [item["id"] for item in updated["technology_profile"]["components"]],
+                ["go", "echo", "pgx", "sqlc"],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

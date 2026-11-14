@@ -3,6 +3,10 @@ id: sqlite-3.45
 engine: sqlite
 version: "3.45"
 profile_version: "1"
+release:
+  channel: compatibility
+  tested_minor: "3.45.3"
+  source: https://www.sqlite.org/chronology.html
 identifier_quote: '"'
 parameter_style: question
 pagination_style: tuple

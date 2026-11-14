@@ -13,9 +13,10 @@ profile:
   id: go-echo-pgx
   version: "1"
   database:
-    adapter_profile: postgresql-16
+    adapter_profile: postgresql-18
     engine: postgresql
-    version: "16"
+    version: "18"
+    tested_minor: "18.7"
     driver: pgx
     query_layer: sqlc
 workload:
@@ -55,14 +56,14 @@ sql:
     timeout_ms: 500
     plan_evidence: .ddd/performance/plans/list-root-entries.json
     database_mapping:
-      profile: postgresql-16
+      profile: postgresql-18
       capabilities: [keyset_pagination, plan]
       native_features:
         - "PostgreSQL: composite index ordered for the keyset predicate"
         - "PostgreSQL: EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) on an isolated dataset"
       fallback_or_incompatibility: []
       evidence:
-        - "PostgreSQL 16 query-plan capture on the isolated benchmark dataset"
+        - "PostgreSQL 18.7 query-plan capture on the isolated benchmark dataset"
 baseline:
   status: pending
   result: .ddd/performance/file-entry-crud.baseline.json

@@ -5,17 +5,17 @@ description: Generate one approved UI or backend artifact from a project scaffol
 
 # scaffold-kit
 
-This is a user-invoked generator entrypoint inspired by Angular's `ng generate`: the project owns the generator names, templates, naming rules, and output boundary. The skill does not decide which component, page, backend seam, or template to create. It renders the already-confirmed UI records for a UI generator, or the selected backend adapter profile and active slice for a backend generator. `$template-kit` is the separate authoring and extraction workflow.
+This is a user-invoked generator entrypoint inspired by Angular's `ng generate`: the project owns the generator names, templates, naming rules, and output boundary. The skill does not decide which component, page, backend seam, or template to create. It renders the already-confirmed UI records for a UI generator, or the selected application components (or explicit scaffold preset) and active slice for a backend generator. `$template-kit` is the separate authoring and extraction workflow.
 
 ## Preconditions
 
-Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), the active slice, the selected adapter profile, and [configuration rules](references/configuration.md). A UI generator additionally reads confirmed `.ddd/ui-system.yaml`, `.ddd/ui-practices.yaml`, and `.ddd/ui-plan.yaml`. Before planning a UI generation, run:
+Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), the active slice, the selected application components or scaffold preset, and [configuration rules](references/configuration.md). A UI generator additionally reads confirmed `.ddd/ui-system.yaml`, `.ddd/ui-practices.yaml`, and `.ddd/ui-plan.yaml`. Before planning a UI generation, run:
 
 ```text
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require scaffold
 ```
 
-The ledger must show a confirmed active slice, a selected technology profile, and `delivery: not_started`. A UI generator also uses the reviewed UI records when they exist; for a UI slice they are the human design pause that keeps component boundaries explicit. A backend generator uses the separate read-only check:
+The ledger must show a confirmed active slice, a selected technology record, and `delivery: not_started`. A UI generator also uses the reviewed UI records when they exist; for a UI slice they are the human design pause that keeps component boundaries explicit. A backend generator uses the separate read-only check:
 
 ```text
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require scaffold-backend
@@ -25,7 +25,7 @@ That check keeps domain, slice, technology, phase, delivery, and active-slice co
 
 ## Command shape
 
-The bundled generator is deliberately inspectable and dry-run by default:
+The bundled generator is deliberately inspectable and dry-run by default. A scaffold profile is a project-owned generator preset; it may reference independent technology components selected by `$adapter-kit`, but it must not turn a preset into the only valid stack:
 
 ```text
 python scaffold-kit/scripts/scaffold.py list --config .ddd/scaffold.yaml
@@ -36,9 +36,11 @@ python scaffold-kit/scripts/scaffold.py describe template:admin-shell --config .
 python scaffold-kit/scripts/scaffold.py generate template admin-shell --name AdminShell --slice-id <approved-slice-id> --target src/app/shell --config .ddd/scaffold.yaml
 python scaffold-kit/scripts/scaffold.py list --profile rust-axum-sqlx --config .ddd/scaffold.yaml
 python scaffold-kit/scripts/scaffold.py generate backend service --profile rust-axum-sqlx --name FileEntry --slice-id <approved-slice-id> --target src/features/files --config .ddd/scaffold.yaml
+python scaffold-kit/scripts/scaffold.py list --profile go-echo-pgx-sqlc --config .ddd/scaffold.yaml
+python scaffold-kit/scripts/scaffold.py generate backend service --profile go-echo-pgx-sqlc --name FileEntry --slice-id <approved-slice-id> --target src/features/files --config .ddd/scaffold.yaml
 ```
 
-The first `generate` command only prints the plan. The user reviews it, then explicitly adds `--apply` to write the listed files. Existing files are skipped unless the user also passes `--force`; no command in a scaffold profile may delete files, install packages, run a shell, or alter the workflow ledger.
+The first `generate` command only prints the plan. The user reviews it, then explicitly adds `--apply` to write the listed files. Existing files are skipped unless the user also passes `--force`; no command in a scaffold profile may delete files, install packages, run a shell, or alter the workflow ledger. If the selected scaffold profile declares independent components, the workflow ledger must contain matching components; the profile can require a subset such as Go + Echo + pgx + sqlc.
 
 In a managed `.ddd` project, `--slice-id` is required for generation and must equal the ledger's approved `active_slice`; the generator cannot silently choose another slice.
 
@@ -54,11 +56,11 @@ Use `list` and `describe` whenever you need to inspect a profile; they are read-
 
 ## Output contract
 
-Return `profile`, `profile_version`, `generator`, `name`, `target`, `mode`, each file action, the approved UI-plan boundary, required library primitives, and any skipped or conflicting file. Include a command that reproduces the dry-run. If `--apply` was not supplied, say that no files were written.
+Return `profile`, `profile_version`, the matched independent `components`, `generator`, `name`, `target`, `mode`, each file action, the approved UI-plan boundary, required library primitives, and any skipped or conflicting file. Include a command that reproduces the dry-run. If `--apply` was not supplied, say that no files were written.
 
 ## Hard stops
 
-- Do not generate a UI artifact without the applicable reviewed UI records, a selected profile, and an exact active slice. A backend artifact uses `--require scaffold-backend`, a selected backend profile, and an exact active slice. Direct calls to `scaffold.py` must be subject to the matching project guard when the target has a `.ddd` directory.
+- Do not generate a UI artifact without the applicable reviewed UI records, a selected technology record, and an exact active slice. A backend artifact uses `--require scaffold-backend`, the selected backend components or explicit preset, and an exact active slice. Direct calls to `scaffold.py` must be subject to the matching project guard when the target has a `.ddd` directory.
 - The explicit dry-run review and `--apply` are the human pause; the plan, records, and Git history remain inside the project for collaboration.
 - Do not invent a component because a page is long or because the framework has a generator with a similar name.
 - Do not overwrite or delete files unless the user explicitly supplies `--force` with `--apply`.

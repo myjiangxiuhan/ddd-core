@@ -21,13 +21,20 @@ PROFILES = (
 
 
 class RustAdapterProfileTest(unittest.TestCase):
-    def test_three_profiles_pin_the_same_http_runtime_and_database(self) -> None:
+    def test_three_presets_share_http_runtime_and_database_family(self) -> None:
         values = [load_profile(profile_id) for profile_id in PROFILES]
         self.assertEqual({value["framework"]["name"] for value in values}, {"axum"})
         self.assertEqual({value["framework"]["version"] for value in values}, {"0.8.9"})
         self.assertEqual({value["runtime"]["name"] for value in values}, {"tokio"})
         self.assertEqual({value["runtime"]["version"] for value in values}, {"1.54.1"})
-        self.assertEqual({value["database"]["performance_profile"] for value in values}, {"postgresql-16"})
+        self.assertEqual({value["database"]["selection"] for value in values}, {"project"})
+        self.assertEqual({value["database"]["engine"] for value in values}, {"postgresql"})
+        self.assertEqual({value["database"]["profile_prefix"] for value in values}, {"postgresql-"})
+
+    def test_database_major_version_is_selected_by_the_project(self) -> None:
+        value = load_profile("rust-axum-sqlx")
+        self.assertNotIn("version", value["database"])
+        self.assertNotIn("performance_profile", value["database"])
 
     def test_profiles_are_three_distinct_database_layers_and_have_no_diesel(self) -> None:
         values = [load_profile(profile_id) for profile_id in PROFILES]

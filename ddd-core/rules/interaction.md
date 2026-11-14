@@ -25,7 +25,7 @@ Database profiles, performance contracts, templates, and baselines are supportin
 | missing or `new` ledger | invoke `$ddd-core` or `$business-lab` | create a scope or business draft |
 | business draft | confirm or correct the mainline | mark the business record `confirmed` |
 | domain draft | confirm or correct the slice design | mark `domain_design: confirmed` |
-| confirmed design | name one slice and choose a profile | set `active_slice` and `technology_profile: selected` |
+| confirmed design | name one slice and choose the application components | set `active_slice` and `technology_profile: selected` |
 | selected profile | invoke `$delivery-loop` | set `delivery: in_progress` and implement one slice |
 | delivery failure | invoke `$repair-loop` | reproduce and repair one confirmed failure |
 | verified delivery | invoke `$code-review` | report standards/spec findings and set review status |

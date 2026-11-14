@@ -3,6 +3,10 @@ id: mysql-8.4
 engine: mysql
 version: "8.4"
 profile_version: "1"
+release:
+  channel: lts
+  tested_minor: "8.4.13"
+  source: https://dev.mysql.com/doc/relnotes/mysql/8.4/en/
 identifier_quote: '`'
 parameter_style: question
 pagination_style: tuple

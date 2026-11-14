@@ -3,11 +3,11 @@
   "contract_id": "file-entry-crud-performance",
   "slice_id": "file-entry-crud",
   "profile": {"id": "go-echo-pgx", "version": "1"},
-  "database_profile": "postgresql-16",
+  "database_profile": "postgresql-18",
   "commit": "<commit-under-test>",
   "dataset_digest": "<seed-and-fixture-digest>",
   "dataset_rows": 100000,
-  "environment": {"database": "postgresql:16", "host": "isolated-benchmark"},
+  "environment": {"database": "postgresql:18.7", "host": "isolated-benchmark"},
   "warmup_seconds": 30,
   "measurement_seconds": 60,
   "scenarios": {

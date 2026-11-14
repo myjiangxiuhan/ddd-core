@@ -15,12 +15,14 @@ A Rust backend profile is a complete, selectable technology decision. It must de
 - the exact HTTP framework and runtime (`framework.name: axum`, `framework.version`, `runtime.name: tokio`, and `runtime.version`), plus the pinned `hyper`, `tower`, and `tower-http` line;
 - one database driver/query layer and version, its package version when the driver is a separate crate, its feature set, and the query model (`compile_time_checked_sql`, `hand_written_parameterized_sql`, or another explicit model);
 - one migration tool and version, its mode, status, and reviewable commands. A tool that is not native to the selected query layer must say so;
-- a common `database.engine`, `database.version`, and `database.performance_profile` when profiles are being compared;
+- a database binding. Use `database.selection: project` with an engine, a profile prefix, and the shared database-profile catalog when the project chooses the server version separately; use `selection: exact` only for a deliberately fixed comparison fixture;
 - Cargo-only `validation.commands` for `format`, `check`, `lint`, `test`, and `audit`;
 - `scaffold.profile` matching the profile id and `scaffold.requires_ui: false` for backend generators;
 - HTTPS evidence links for every pinned framework, runtime, driver, and migration tool.
 
-The repository currently provides three deliberately separate PostgreSQL 16 choices: `rust-axum-sqlx`, `rust-axum-tokio-postgres`, and `rust-axum-toasty`. They share Axum, Tokio, the database engine, dataset, and workload for a fair comparison, but they do not share a query abstraction. Diesel is not a hidden fallback. Toasty is marked experimental and its native migration commands are recorded as unavailable; the profile therefore names the external migration runner and keeps that decision visible.
+The repository currently provides three deliberately separate PostgreSQL-compatible choices: `rust-axum-sqlx`, `rust-axum-tokio-postgres`, and `rust-axum-toasty`. They share Axum, Tokio, the database family, dataset, and workload for a fair comparison, but they do not share a query abstraction. The exact server profile is selected by `$performance-loop`; a new PostgreSQL major does not require cloning all three application profiles. Diesel is not a hidden fallback. Toasty is marked experimental and its native migration commands are recorded as unavailable; the profile therefore names the external migration runner and keeps that decision visible.
+
+For ordinary project selection, prefer the independent records under [`adapter-kit/components`](../components/schema.md): `rust`, `axum`, `tokio`, `sqlx`, `go`, `echo`, `pgx`, `sqlc`, `typescript`, `react`, `antd`, and `antd-pro`. The `rust-axum-*`, `go-echo-pgx`, `react-antd`, and `react-antd-pro` files remain as comparison/scaffold presets for existing generators; they are not a requirement to use a fixed stack.
 
 Validate a profile before presenting the `select-profile` decision:
 
@@ -36,5 +38,5 @@ Profile confirmation is a separate user gate after domain design and slice appro
 
 ## Database capability mapping
 
-The selected profile identifies the database; the performance contract identifies how that database is used. Set `profile.database.adapter_profile` to the configured performance profile ID or project-relative YAML path. For each material query or write, record the native capability, pinned version, SQL/API form, plan evidence, transaction and lock semantics, and fallback cost. Examples include PostgreSQL `RETURNING`, `ON CONFLICT`, partial or expression indexes, window functions, and `EXPLAIN (ANALYZE, BUFFERS)`; equivalent features on another database are not assumed to have the same semantics. See [database adaptation rules](../../performance-loop/references/database-adaptation.md) and [database profile schema](../../performance-loop/profiles/schema.md).
+The selected application profile identifies a compatible database family; the performance contract identifies the exact database profile and how that database is used. Set `profile.database.adapter_profile` to the configured performance profile ID or project-relative YAML path. For each material query or write, record the native capability, pinned major and tested minor, SQL/API form, plan evidence, transaction and lock semantics, and fallback cost. Examples include PostgreSQL `RETURNING`, `ON CONFLICT`, partial or expression indexes, window functions, and `EXPLAIN (ANALYZE, BUFFERS)`; equivalent features on another database are not assumed to have the same semantics. See [database adaptation rules](../../performance-loop/references/database-adaptation.md) and [database profile schema](../../performance-loop/profiles/schema.md).
 

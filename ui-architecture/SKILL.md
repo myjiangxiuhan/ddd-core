@@ -9,7 +9,7 @@ This is a user-invoked planning skill. It prevents a React, Vue, or Angular page
 
 ## Preconditions
 
-Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), `.ddd/GLOSSARY.md` or `.ddd/GLOSSARY-MAP.md`, the active slice, the selected technology profile, the confirmed `.ddd/ui-system.yaml`, the confirmed `.ddd/ui-practices.yaml`, [catalog and plan schema](references/plan-schema.md), and [scaffold configuration rules](../scaffold-kit/references/configuration.md). Run:
+Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), `.ddd/GLOSSARY.md` or `.ddd/GLOSSARY-MAP.md`, the active slice, the selected technology components or explicit UI preset, the confirmed `.ddd/ui-system.yaml`, the confirmed `.ddd/ui-practices.yaml`, [catalog and plan schema](references/plan-schema.md), and [scaffold configuration rules](../scaffold-kit/references/configuration.md). Run:
 
 ```text
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require ui-design
