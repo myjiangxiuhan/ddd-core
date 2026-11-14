@@ -1,0 +1,64 @@
+schema_version: "1"
+id: rust-axum-sqlx
+version: "1"
+type: technology
+surface: backend
+language: rust
+rust:
+  edition: "2024"
+  msrv: "1.85"
+framework:
+  name: axum
+  version: "0.8.9"
+runtime:
+  name: tokio
+  version: "1.54.1"
+http:
+  hyper: "1"
+  tower: "0.5"
+  tower-http: "0.6"
+serialization:
+  serde: "1"
+database:
+  engine: postgresql
+  version: "16"
+  performance_profile: postgresql-16
+driver:
+  name: sqlx
+  version: "0.9.0"
+  package: sqlx
+  query_model: compile_time_checked_sql
+  features:
+    - runtime-tokio-rustls
+    - postgres
+    - macros
+    - migrate
+    - uuid
+    - time
+migration:
+  tool: sqlx-cli
+  version: "0.9.0"
+  mode: cli
+  status: stable
+  commands:
+    install: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,postgres
+    create: sqlx migrate add --source migrations <name>
+    apply: sqlx migrate run --source migrations
+    verify: sqlx migrate info --source migrations
+validation:
+  commands:
+    format: cargo fmt --all -- --check
+    check: cargo check --workspace --all-targets
+    lint: cargo clippy --workspace --all-targets --all-features -- -D warnings
+    test: cargo test --workspace
+    audit: cargo audit
+scaffold:
+  profile: rust-axum-sqlx
+  generator_kinds:
+    - backend
+  requires_ui: false
+evidence:
+  framework: https://github.com/tokio-rs/axum/releases/tag/axum-v0.8.9
+  runtime: https://github.com/tokio-rs/tokio/releases/tag/tokio-1.54.1
+  driver: https://github.com/transact-rs/sqlx/releases/tag/v0.9.0
+  migration: https://github.com/transact-rs/sqlx/blob/v0.9.0/sqlx-cli/README.md

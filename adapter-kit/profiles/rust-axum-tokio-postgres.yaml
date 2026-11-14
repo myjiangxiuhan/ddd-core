@@ -1,0 +1,61 @@
+schema_version: "1"
+id: rust-axum-tokio-postgres
+version: "1"
+type: technology
+surface: backend
+language: rust
+rust:
+  edition: "2024"
+  msrv: "1.85"
+framework:
+  name: axum
+  version: "0.8.9"
+runtime:
+  name: tokio
+  version: "1.54.1"
+http:
+  hyper: "1"
+  tower: "0.5"
+  tower-http: "0.6"
+serialization:
+  serde: "1"
+database:
+  engine: postgresql
+  version: "16"
+  performance_profile: postgresql-16
+driver:
+  name: tokio-postgres
+  version: "0.7.18"
+  package: tokio-postgres
+  query_model: hand_written_parameterized_sql
+  features:
+    - with-uuid-1
+    - with-time-0_3
+    - with-serde_json-1
+migration:
+  tool: refinery
+  version: "0.9.2"
+  mode: embedded_runner
+  status: stable
+  driver_feature: tokio-postgres
+  commands:
+    add: cargo add refinery@0.9.2 --features tokio-postgres
+    apply: cargo run --bin migrate
+    verify: cargo test --bin migrate
+validation:
+  commands:
+    format: cargo fmt --all -- --check
+    check: cargo check --workspace --all-targets
+    lint: cargo clippy --workspace --all-targets --all-features -- -D warnings
+    test: cargo test --workspace
+    audit: cargo audit
+scaffold:
+  profile: rust-axum-tokio-postgres
+  generator_kinds:
+    - backend
+  requires_ui: false
+evidence:
+  framework: https://github.com/tokio-rs/axum/releases/tag/axum-v0.8.9
+  runtime: https://github.com/tokio-rs/tokio/releases/tag/tokio-1.54.1
+  driver: https://github.com/rust-postgres/rust-postgres/releases/tag/tokio-postgres-v0.7.18
+  migration: https://github.com/rust-db/refinery/releases/tag/v0.9.2

@@ -1,0 +1,66 @@
+schema_version: "1"
+id: rust-axum-toasty
+version: "1"
+type: technology
+surface: backend
+language: rust
+rust:
+  edition: "2024"
+  msrv: "1.95"
+framework:
+  name: axum
+  version: "0.8.9"
+runtime:
+  name: tokio
+  version: "1.54.1"
+http:
+  hyper: "1"
+  tower: "0.5"
+  tower-http: "0.6"
+serialization:
+  serde: "1"
+database:
+  engine: postgresql
+  version: "16"
+  performance_profile: postgresql-16
+driver:
+  name: toasty
+  version: "0.11.0"
+  package: toasty-driver-postgresql
+  package_version: "0.8.0"
+  query_model: generated_async_orm
+  features:
+    - postgresql
+  maturity: experimental
+migration:
+  tool: refinery
+  version: "0.9.2"
+  mode: external_runner
+  status: external_required
+  driver_feature: tokio-postgres
+  native_tool:
+    name: toasty-cli
+    version: "0.11.0"
+    migrations: unavailable
+  commands:
+    add: cargo add refinery@0.9.2 --features tokio-postgres
+    apply: cargo run --bin migrate
+    verify: cargo test --bin migrate
+validation:
+  commands:
+    format: cargo fmt --all -- --check
+    check: cargo check --workspace --all-targets
+    lint: cargo clippy --workspace --all-targets --all-features -- -D warnings
+    test: cargo test --workspace
+    audit: cargo audit
+scaffold:
+  profile: rust-axum-toasty
+  generator_kinds:
+    - backend
+  requires_ui: false
+evidence:
+  framework: https://github.com/tokio-rs/axum/releases/tag/axum-v0.8.9
+  runtime: https://github.com/tokio-rs/tokio/releases/tag/tokio-1.54.1
+  driver: https://github.com/tokio-rs/toasty/blob/main/Cargo.toml
+  driver_package: https://github.com/tokio-rs/toasty/blob/main/crates/toasty-driver-postgresql/Cargo.toml
+  migration: https://github.com/tokio-rs/toasty/issues/190
