@@ -34,6 +34,7 @@ REQUIRED_KEYS = {
     "ui-practices": ("gates",),
     "ui-design": ("gates", "active_slice"),
     "scaffold": ("gates", "active_slice"),
+    "scaffold-backend": ("gates", "active_slice"),
     "delivery": ("gates", "active_slice"),
     "repair": ("gates", "active_slice"),
     "review": ("gates", "active_slice"),
@@ -535,19 +536,22 @@ def check(state: dict[str, Any], target: str, root: Path | None = None) -> str |
         if gates.get("ui_design", "not_started") not in {"not_started", "draft"}:
             return "ui_design must be not_started or draft"
         return None
-    if target == "scaffold":
+    if target in {"scaffold", "scaffold-backend"}:
         if gates.get("phase") != "delivery":
             return "phase must be delivery before scaffold"
         if gates.get("business_discovery") != "confirmed":
             return "business_discovery must be confirmed before scaffold"
         if gates.get("technology_profile") != "selected":
             return "technology_profile must be selected"
-        if gates.get("ui_system", "not_started") != "confirmed":
-            return "ui_system must be confirmed"
-        if gates.get("ui_practices", "not_started") != "confirmed":
-            return "ui_practices must be confirmed"
-        if gates.get("ui_design", "not_started") != "confirmed":
-            return "ui_design must be confirmed"
+        if target == "scaffold":
+            if gates.get("ui_system", "not_started") != "confirmed":
+                return "ui_system must be confirmed"
+            if gates.get("ui_practices", "not_started") != "confirmed":
+                return "ui_practices must be confirmed"
+            if gates.get("ui_design", "not_started") != "confirmed":
+                return "ui_design must be confirmed"
+        elif gates.get("ui_design", "not_started") == "draft":
+            return "a draft ui_design must be confirmed or removed before backend scaffold"
         if gates.get("delivery") != "not_started":
             return "delivery must be not_started before scaffold"
         decisions = state.get("decisions")

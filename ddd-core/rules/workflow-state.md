@@ -13,7 +13,7 @@ The bundled read-only checker can be run before a gated operation:
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require delivery
 ```
 
-Use `business`, `technology`, `database-profile`, `performance`, `baseline`, `ui-system`, `ui-practices`, `ui-design`, `scaffold`, `delivery`, `repair`, or `review` for the corresponding entrypoint. A non-zero exit is a hard stop.
+Use `business`, `technology`, `database-profile`, `performance`, `baseline`, `ui-system`, `ui-practices`, `ui-design`, `scaffold`, `scaffold-backend`, `delivery`, `repair`, or `review` for the corresponding entrypoint. A non-zero exit is a hard stop.
 
 Use the exact state vocabulary in [canonical workflow keywords](keywords.md). The ledger is intentionally boring: every change should be easy to audit from the actor, transition, and evidence.
 
@@ -104,7 +104,7 @@ Available transitions are `start-business-lab`, `record-mainline`, `confirm-main
 - `performance-loop` may create or update a slice performance contract and baseline evidence; it must keep user budgets, workload facts, database adaptation, and measured results distinct. A persistence, SQL, migration, index, queue, or external-call slice may not enter delivery without a confirmed `.ddd/performance/<slice-id>.yaml` and its separately attested baseline evidence.
 - `performance-loop` may set `performance_contract: confirmed` only through the separate signed `confirm-performance` transition. The transition binds the exact contract file and the already-selected database profile; editing `status: confirmed` in YAML does not advance the gate.
 - `performance-loop` may set `baseline_attestation: confirmed` only through the separate signed `confirm-baseline` transition after the performance contract is confirmed. The request and consumed receipt cover the baseline, contract, profile, dataset digest and row count, commit, and slice binding; changing any of them invalidates comparison and delivery.
-- `scaffold-kit` may write only the files shown in a dry-run from a configured generator after `ui_design: confirmed`; it must not change gate fields or run arbitrary commands.
+- `scaffold-kit` may write only the files shown in a dry-run from a configured generator after `ui_design: confirmed` for a UI generator, or after the backend scaffold preconditions (`business_discovery: confirmed`, `domain_design: confirmed`, `slice_approval: approved`, `technology_profile: selected`, `phase: delivery`, and `delivery: not_started`) for a backend generator. A draft UI plan still blocks a backend scaffold. It must not change gate fields or run arbitrary commands.
 - `delivery-loop` may set `delivery: in_progress` and later `verified` or `blocked` only for the existing `active_slice`. When the ledger is database-backed, `database_profile: selected`, `performance_contract: confirmed`, and `baseline_attestation: confirmed` are mandatory; all three records must still match their signed digests before delivery or review.
 - `repair-loop` may update the failure evidence and return the active slice to `verified` or `blocked`; it may not create a new feature or change the active slice.
 - `code-review` may set `review: passed` or `review: blocked` after reviewing the verified active-slice diff; it must not edit source files or start repair.
