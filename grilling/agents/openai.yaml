@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grilling"
+  short_description: "Ask the current independent decision frontier"
+  default_prompt: "Use the grilling method inside the active workflow; ask one independent question round and wait for my answers."
+policy:
+  allow_implicit_invocation: true

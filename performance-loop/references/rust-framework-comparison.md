@@ -17,7 +17,7 @@ The comparison fixes Axum 0.8.9, Tokio 1.54.1, Rust 2024 with a toolchain at lea
 
 No numeric winner is inferred from library shape. SQLx and tokio-postgres can both expose relatively direct SQL paths, but their compile-time checks, pooling, mapping, and application code differ. Toasty may reduce handwritten mapping and relationship code, but it is explicitly experimental in this repository and its native migration workflow is not available yet. These are hypotheses for the experiment, not performance results.
 
-Run the comparison only after the normal signed database-profile, performance-contract, and baseline-attestation gates. The matrix and results are evidence records; they do not select the technology profile. Use the comparator to report p95 latency and throughput separately, keep p99 and error rate visible, and leave `overall_winner` null so a single metric cannot silently become a product decision:
+Run the comparison when the slice needs it and the project has selected a database profile. The matrix and results are evidence records; they do not select the technology profile. Use the comparator to report p95 latency and throughput separately, keep p99 and error rate visible, and leave `overall_winner` null so a single metric cannot silently become a product decision:
 
 ```text
 python performance-loop/scripts/compare_frameworks.py \

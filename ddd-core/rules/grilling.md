@@ -5,6 +5,8 @@ id: ddd.grilling
 
 # Discovery interview
 
+The reusable interview method lives in the model-invoked [`grilling`](../../grilling/SKILL.md) skill. This file is its canonical rule reference; `business-lab` remains the one-question-per-turn learning exception.
+
 Build a decision tree before asking questions. A decision is a node; decisions that depend on it are children. The current frontier is the set of unanswered nodes whose prerequisites are already settled.
 
 ## Round rules
@@ -14,7 +16,7 @@ Build a decision tree before asking questions. A decision is a node; decisions t
 - Number questions and give each a short title, the decision it controls, the available options, and the consequence of each option.
 - Give an `➡️ Recommended answer` when a default is useful. Word the question so “yes” accepts that recommendation. Store the recommendation as `agent_recommendation`, never as a user decision.
 - In `business-lab`, do not recommend a business answer by default. A choice list is a memory aid; the user's wording and confirmation are the evidence.
-- Wait for the user's answers before recomputing the frontier. One invocation may advance one gate transition, not the whole tree.
+- Wait for the user's answers before recomputing the frontier. Mechanical record updates may happen in the same invocation; stop after the current question round or the owning workflow's user decision.
 - Finding facts is the agent's job. Read the repository, records, and available tools instead of asking the user for facts that can be observed.
 - Decisions are the user's job. Ask when the choice changes scope, actors, invariants, terminology, priority, a public seam, or a technology commitment.
 

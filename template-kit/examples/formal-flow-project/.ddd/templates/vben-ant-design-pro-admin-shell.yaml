@@ -146,7 +146,7 @@ review_checks:
 confirmation:
   status: confirmed
   source: user_decision
-  evidence: ".ddd/approvals/credentials/confirm-template.json"
+  evidence: ".ddd/templates/admin-shell-confirmation.md"
 files:
   - path: "{{kebab_name}}/index.tsx"
     template_file: ".ddd/templates/vben-ant-design-pro-admin-shell/admin-shell.tsx.template"

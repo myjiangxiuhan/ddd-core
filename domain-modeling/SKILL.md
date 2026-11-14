@@ -1,11 +1,11 @@
 ---
 name: domain-modeling
-description: Sharpen the project's business language while designing by challenging ambiguous terms, testing relationships with concrete scenarios, and updating the canonical glossary after user confirmation.
+description: Sharpen one ambiguous business term against concrete scenarios and the glossary; update it only after user confirmation.
 ---
 
 # domain-modeling
 
-This is a vocabulary layer, not a feature-planning or implementation entrypoint. It may run beneath `business-lab`, `ddd-core`, `triage-loop`, `to-spec`, `to-slices`, `ui-system`, `ui-practices`, `ui-architecture`, `performance-loop`, `delivery-loop`, and `code-review` when language is the problem. It does not advance workflow gates.
+This is a model-invoked vocabulary layer, not a feature-planning or implementation entrypoint. It may run beneath an active workflow when language is the problem. It does not advance workflow gates.
 
 ## Canonical records
 
@@ -63,6 +63,7 @@ Return the term under discussion, current glossary meaning, competing meanings, 
 
 ## Canonical rules
 
+- [Skill contract](../ddd-core/rules/skill-contract.md) (`ddd.skill-contract`)
 - [Glossary format](references/GLOSSARY-FORMAT.md) (`domain-modeling.glossary`)
 - [Human-led business investigation](../business-lab/SKILL.md) (`business-lab`)
 - [Domain model rules](../ddd-core/rules/domain-model.md) (`ddd.domain-model`)

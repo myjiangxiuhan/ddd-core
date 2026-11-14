@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from performance_gate import PerformanceGateError, require_database_profile_gate, selected_profile_path
+from performance_gate import PerformanceGateError, require_database_profile_context, selected_profile_path
 from profile_loader import PROFILE_DIR, ProfileError, load_yaml
 
 
@@ -279,18 +279,16 @@ def main() -> int:
     parser.add_argument("profile", help="profile id or YAML path")
     parser.add_argument("spec", type=Path, help="bounded SQL operation spec")
     parser.add_argument("--state", type=Path, required=True, help="project workflow ledger")
-    parser.add_argument("--trusted-public-key", required=True, help="external trusted user public key")
     parser.add_argument("--profiles-dir", type=Path, default=PROFILE_DIR)
     args = parser.parse_args()
     try:
-        _, database_record, profile, _ = require_database_profile_gate(
+        _, database_record, profile, _ = require_database_profile_context(
             args.state,
-            args.trusted_public_key,
             require_performance=False,
         )
         requested_profile = Path(args.profile).stem if Path(args.profile).suffix in {".yaml", ".yml"} else args.profile
         if requested_profile != database_record["id"]:
-            raise SqlGenerationError("requested SQL profile does not match the signed workflow database_profile")
+            raise SqlGenerationError("requested SQL profile does not match the selected workflow database_profile")
         selected_path = selected_profile_path(args.state, database_record)
         if args.profiles_dir.resolve() not in {selected_path.parent.resolve(), PROFILE_DIR.resolve()}:
             raise SqlGenerationError("--profiles-dir must be the selected database profile directory")

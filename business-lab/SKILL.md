@@ -101,9 +101,9 @@ Use [the record template](references/mainline-template.md). Run [the review chec
 
 ## Gate process
 
-1. On the first round, create the working agreement and empty business records, then apply exactly one `start-business-lab` transition. In `self_authored` mode, stop and wait for the user's artifact; in `adaptive` mode, ask one micro-question and stop.
-2. When the user has written and reviewed a mainline, apply exactly one `record-mainline` transition with the artifact path and evidence.
-3. Ask for a separate confirmation or correction. After the user confirms the actual business mainline, create a `workflow:confirm-mainline` approval request over the ledger and mainline artifact, let the user inspect and sign it with the external trust key, and apply exactly one `confirm-mainline` transition. A chat confirmation or hand-edited `user_decision` field is not enough.
+1. On the first round, create the working agreement and empty business records. There is no separate “start” command: in `self_authored` mode, stop and wait for the user's artifact; in `adaptive` mode, ask one micro-question and stop.
+2. When the user has written and reviewed a mainline, apply exactly one `record-mainline` transition with the artifact path. It can be the first ledger transition; add evidence when the user supplied a meaningful note.
+3. Ask for a separate confirmation or correction. After the user confirms the actual business mainline, apply one `confirm-mainline` transition with the user's explicit evidence. A recommendation or silent inference is not a confirmation.
 4. Stop. The next explicit action is `$ddd-core`, which may shape a technology-neutral slice from the confirmed business evidence. Do not call it automatically.
 
 ## Output contract

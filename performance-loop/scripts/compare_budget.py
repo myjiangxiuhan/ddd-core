@@ -14,7 +14,7 @@ from performance_gate import (
     PerformanceGateError,
     project_path,
     project_root_from_state,
-    require_database_profile_gate,
+    require_database_profile_context,
     selected_profile_path,
 )
 from profile_loader import PROFILE_DIR
@@ -171,13 +171,11 @@ def main() -> int:
     parser.add_argument("contract", type=Path)
     parser.add_argument("baseline", type=Path)
     parser.add_argument("--state", type=Path, required=True, help="project workflow ledger")
-    parser.add_argument("--trusted-public-key", required=True, help="external trusted user public key")
     parser.add_argument("--profiles-dir", type=Path, default=PROFILE_DIR)
     args = parser.parse_args()
     try:
-        state, _, selected_profile, selected_contract = require_database_profile_gate(
+        state, _, selected_profile, selected_contract = require_database_profile_context(
             args.state,
-            args.trusted_public_key,
             require_performance=True,
         )
         state_record = state.get("performance_contract")
@@ -185,19 +183,19 @@ def main() -> int:
             raise PerformanceGateError("performance_contract record is missing")
         root = project_root_from_state(args.state)
         if args.contract.resolve() != (root / state_record["path"]).resolve():
-            raise PerformanceGateError("baseline contract path does not match the signed performance_contract")
+            raise PerformanceGateError("baseline contract path does not match the selected performance_contract")
         if not isinstance(selected_contract, dict):
             raise PerformanceGateError("confirmed performance contract snapshot is missing")
-        from performance_gate import load_attested_baseline
+        from performance_gate import load_baseline
 
-        attested_baseline = load_attested_baseline(args.state, state)
+        baseline_result = load_baseline(args.state, state)
         contract_value = selected_contract
-        baseline_record = contract_value.get("baseline")
-        if not isinstance(baseline_record, dict) or not isinstance(baseline_record.get("result"), str):
+        baseline_binding = contract_value.get("baseline")
+        if not isinstance(baseline_binding, dict) or not isinstance(baseline_binding.get("result"), str):
             raise PerformanceGateError("confirmed performance contract must bind a baseline.result path")
-        expected_baseline = project_path(root, baseline_record["result"], "baseline result")
+        expected_baseline = project_path(root, baseline_binding["result"], "baseline result")
         if args.baseline.resolve() != expected_baseline:
-            raise PerformanceGateError("baseline path does not match the signed performance contract")
+            raise PerformanceGateError("baseline path does not match the performance contract")
         selected_path = selected_profile_path(args.state, state["database_profile"])
         if args.profiles_dir.resolve() not in {selected_path.parent.resolve(), PROFILE_DIR.resolve()}:
             raise PerformanceGateError("--profiles-dir must be the selected database profile directory")
@@ -207,7 +205,7 @@ def main() -> int:
             profiles_dir=selected_path.parent,
             profile_override=selected_profile,
             contract_override=selected_contract,
-            baseline_override=attested_baseline,
+            baseline_override=baseline_result,
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0 if result["ok"] else 1

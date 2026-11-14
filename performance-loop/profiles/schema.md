@@ -5,7 +5,7 @@ id: performance.database-profile
 
 # Database performance profile
 
-A database profile is a version-pinned adapter rule set. It does not choose a database for the project. `adapter-kit` or a confirmed performance contract selects one profile, and the generator uses only that profile's declared SQL capabilities.
+A database profile is a version-pinned adapter rule set. It does not choose a database for the project. The user selects one profile through `performance-loop`, and a confirmed performance contract binds that selection; the generator uses only the selected profile's declared SQL capabilities.
 
 Each profile declares:
 

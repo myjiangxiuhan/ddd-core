@@ -5,7 +5,7 @@ description: Review one verified DDD slice against its spec, repository standard
 
 # code-review
 
-This is a user-invoked, read-only review gate. It borrows the useful shape from [Matt Pocock's review skill](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)—pin one fixed point, compare the diff, and keep independent review axes separate—but adds the checks that make the result useful in this DDD workflow.
+This is a user-invoked, read-only review checkpoint. It borrows the useful shape from [Matt Pocock's review skill](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)—pin one fixed point, compare the diff, and keep independent review axes separate—but adds the checks that make the result useful in this DDD workflow.
 
 ## Preconditions
 
@@ -15,7 +15,7 @@ Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gat
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require review
 ```
 
-A non-zero result is a hard stop. The ledger must show `domain_design: confirmed`, `slice_approval: approved`, an exact `active_slice`, `technology_profile: selected`, and `delivery: verified`. For a UI slice, it must also show `ui_system: confirmed`, `ui_practices: confirmed`, and `ui_design: confirmed`. If the review gate is `blocked`, the user must explicitly invoke this skill again with new evidence; do not silently rerun it.
+A non-zero result is a hard stop. The ledger must show `domain_design: confirmed`, `slice_approval: approved`, an exact `active_slice`, `technology_profile: selected`, and `delivery: verified`. For a UI slice, the confirmed UI records are the source of truth; their mirrored gate fields are optional summaries. If the review gate is `blocked`, the user must explicitly invoke this skill again with new evidence; do not silently rerun it.
 
 The user must supply a fixed point such as a commit, branch, tag, merge-base, or `HEAD~5`. If it is missing, ask for exactly that one value and stop.
 
@@ -69,7 +69,7 @@ Keep `UI`, `Performance`, and `Custom` as `not applicable` only when their preco
 - Do not review the whole repository when the active slice diff is available; keep the fixed-point boundary explicit.
 - Do not fix findings in this invocation. A code defect is a later `$repair-loop`; a new domain rule, actor, boundary, or capability returns to `$ddd-core`.
 - Do not treat a generated file as proof that the component boundary is correct. Compare it with `.ddd/ui-plan.yaml` and the selected scaffold profile.
-- Do not approve persistence or SQL changes without a confirmed performance contract, a pinned database `adapter_profile`, a database-specific adaptation mapping, a consumed `confirm-baseline` attestation binding the evidence, and a reproducible baseline or an explicitly documented reason the path is not measurable yet.
+- When performance or database records exist, compare persistence and SQL changes with their contract, profile, adaptation mapping, and baseline evidence. If those records are not yet available, report the missing evidence and its consequence; do not invent a budget or turn the absence into a default approval ceremony.
 - Do not accept a generic SQL fallback when the selected database has a confirmed native capability that affects the budget; require the adapter to record the feature, version, plan evidence, and portability consequence.
 - Do not implement deferred capabilities such as file-content deduplication or Redis indexing while reviewing a basic file CRUD slice.
 - Do not suppress a missing spec silently. Report `no spec available` and mark any spec conclusion as limited.

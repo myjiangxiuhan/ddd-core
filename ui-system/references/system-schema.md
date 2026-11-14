@@ -10,8 +10,8 @@ id: ui-system.schema
 ```yaml
 schema_version: "1"
 status: draft # draft -> confirmed after a separate user action
-profile: react-antd-pro
-profile_version: "1"
+profile: null # optional until a framework/component profile is selected
+profile_version: null
 scope: project
 tokens:
   format: dtcg-2025.10-or-local-compatible

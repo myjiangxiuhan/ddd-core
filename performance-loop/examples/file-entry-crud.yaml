@@ -8,7 +8,7 @@ decisions:
     source: agent_recommendation
     question: "What is the first-release p95 and p99 budget for listing file entries?"
     answer: "p95 <= 200 ms, p99 <= 500 ms"
-    evidence: "Example only; replace with a user decision and detached approval."
+    evidence: "Example only; replace with a user decision and project evidence."
 profile:
   id: go-echo-pgx
   version: "1"

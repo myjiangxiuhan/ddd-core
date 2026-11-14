@@ -5,7 +5,7 @@ description: Collect version-pinned React, Vue, Angular, and UI-library guidance
 
 # ui-practices
 
-This is a user-invoked evidence and policy gate. It collects official framework and component-library practices, then records which ones this project will adopt. It prevents framework habits from becoming silent architecture decisions. `$ui-architecture` consumes the confirmed profile for one page or feature.
+This is a user-invoked evidence and policy pause. It collects official framework and component-library practices, then records which ones this project will adopt. It prevents framework habits from becoming silent architecture decisions. `$ui-architecture` consumes the confirmed profile for one page or feature. The pause keeps the user in the design loop; it is not a cryptographic approval ceremony.
 
 ## Preconditions
 
@@ -15,9 +15,9 @@ Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gat
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require ui-practices
 ```
 
-A non-zero result is a hard stop. The exact framework, version, component library, and target must come from the selected profile or repository evidence. If they are missing, route back to `$adapter-kit`; do not infer them from file extensions.
+A non-zero result is a hard stop when the active UI slice needs this practice record. The exact framework, version, component library, and target must come from the selected profile or repository evidence. If they are missing, route back to `$adapter-kit`; do not infer them from file extensions.
 
-An existing `.ddd/ui-practices.yaml` is evidence only. The ledger gate must still be `confirmed` for the current selected profile; after `reset-slice` or a profile change, re-check and re-confirm it instead of treating the old file as approval.
+An existing `.ddd/ui-practices.yaml` is evidence only. For a UI slice, the user still reviews and confirms it for the current selected profile; after `reset-slice` or a profile change, re-check it instead of silently reusing an old decision.
 
 ## Evidence collection
 
@@ -57,7 +57,7 @@ These are evidence-backed defaults, not unconditional mandates. If the selected 
 1. Inspect the ledger, selected profile, UI system, repository inventory, and official sources.
 2. Create or update `.ddd/ui-practices.yaml` with `draft` status, the component decision order, framework lens, library primitives, state/data rules, accessibility/testing expectations, deviations, and evidence.
 3. Ask the current independent frontier, normally 1-4 questions. Ask about material deviations or policies, not facts already established by sources.
-4. When the user has reviewed the profile, apply exactly one `draft-ui-practices` transition and stop. On a later explicit confirmation or correction, create a signed `workflow:confirm-ui-practices` approval over `.ddd/ui-practices.yaml`, then apply exactly one `confirm-ui-practices` transition with the external trusted key and stop.
+4. Show the draft in the same turn that it is written. On a later explicit confirmation or correction, change the record to `status: confirmed` and preserve the user's decision and evidence in the record. There is no second ledger confirmation step; the record and Git history are the shared review trail.
 5. Tell the user to invoke `$ui-system` if the project UI system is not confirmed; otherwise `$ui-architecture` is the next explicit action. Never invoke another skill automatically.
 
 ## Output contract

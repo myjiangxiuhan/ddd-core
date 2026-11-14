@@ -5,18 +5,18 @@ description: Inspect, extract, create, and validate reusable UI templates from p
 
 # template-kit
 
-This is a user-invoked template workbench. It turns a confirmed UI system, layout, and framework practice profile into a project-owned, inspectable scaffold template. A source may be an open-source repository, a local page, a design reference, or a user-provided artifact; multiple pinned sources may be compared for one template. The skill records provenance and extracts patterns, slots, contracts, and placeholders; it does not silently copy source code, assets, or licenses. A source's layout can be adapted to the target profile: its structure is evidence, while the project's component library, tokens, themes, and framework contracts remain authoritative.
+This is a user-invoked template workbench. It turns a reviewed UI system, layout, and framework practice profile into a project-owned, inspectable scaffold template. A source may be an open-source repository, a local page, a design reference, or a user-provided artifact; multiple pinned sources may be compared for one template. The skill records provenance and extracts patterns, slots, contracts, and placeholders; it does not silently copy source code, assets, or licenses. A source's layout can be adapted to the target profile: its structure is evidence, while the project's component library, tokens, themes, and framework contracts remain authoritative.
 
 ## Preconditions
 
-Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), the confirmed `.ddd/ui-system.yaml`, the confirmed `.ddd/ui-practices.yaml`, and [the template schema](references/template-schema.md). Run both foundation checks:
+Read [the template schema](references/template-schema.md). For `inspect`, the pinned source and research note are enough; do not require a project ledger just to study a reference. For `extract`, `create`, and `validate` inside an active UI project, also read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), and the applicable UI records, then run the foundation checks:
 
 ```text
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require ui-system
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require ui-practices
 ```
 
-A non-zero result is a hard stop. A template must target the selected technology profile. If the source is an open-source project, use a pinned tag, release, commit, or archive and record the license and attribution requirements before extracting anything.
+A non-zero result is a hard stop when an extraction or registration targets an active UI slice. A template must target the selected technology profile when it is registered for scaffolding. If the source is an open-source project, use a pinned tag, release, commit, or archive and record the license and attribution requirements before extracting anything.
 
 ## Modes
 
@@ -41,11 +41,11 @@ Typical sources can include Vben Admin, Ant Design Pro examples, `xxx-admin` pro
 
 ## Process
 
-1. Read the foundations, selected profile, source, and local precedent.
+1. For `inspect`, read the pinned source and local research context. For `extract` or `create`, read the selected profile, applicable UI records, source, and local precedent.
 2. For `inspect`, write one cited note under `.ddd/template-sources/` and stop.
 3. For `extract` or `create`, draft `.ddd/templates/<template-id>.yaml` and any clean-room template files under `.ddd/templates/<template-id>/`. Keep the record `status: draft` and show every file and placeholder.
 4. Ask the independent frontier, normally 1-4 questions: target scope, source adaptation, slots/regions, variables, license handling, and generator kind. Do not select a template boundary because the reference looks polished.
-5. After the user confirms or corrects the pattern, compute `file_digests` for every `template_file` and `source_evidence_digests` for every provenance note, then create a separate signed `template:confirm` approval request over the exact template record. The user must inspect the displayed payload digest and sign it with a private key kept outside the project. Store the credential path in `confirmation.evidence`, change the record to `status: confirmed`, and then register it under the selected profile's `generators.template` section in `.ddd/scaffold.yaml` with matching `record`, `file_digests`, and `source_evidence_digests` back to the same file. `$scaffold-kit` verifies the credential against the fixed user trust manifest and append-only receipt chain, then compares the registration, current template files, and provenance notes with the signed record before it can generate. This is the only point at which the template becomes available to `$scaffold-kit`.
+5. After the user confirms or corrects the pattern, compute `file_digests` for every `template_file` and `source_evidence_digests` for every provenance note, change the record to `status: confirmed`, and register it under the selected profile's `generators.template` section in `.ddd/scaffold.yaml` with matching `record`, `file_digests`, and `source_evidence_digests` back to the same file. `$scaffold-kit` compares the registration, current template files, and provenance notes with the confirmed record before it can generate.
 6. Run `scaffold.py check`, `describe`, and a dry-run `generate template ...`. Stop. The user must invoke `$scaffold-kit` explicitly to apply it.
 
 ## Output contract
@@ -58,8 +58,8 @@ Return the mode, pinned source and license evidence, extracted facts, adapted pa
 - Do not merge multiple source findings into one pattern without identifying which source supplied each layout, theme, or component observation.
 - Do not copy code, assets, fonts, trademarks, or project configuration by default.
 - Do not register or generate a `draft` template.
-- Do not treat a copied `status: confirmed`, `source: user_decision`, or `actor: user` field as human approval; the registration must carry a signed `template:confirm` credential whose request covers the current template record, and point back to the confirmed template record.
-- Do not accept a project-controlled public key or manifest as the real trust anchor. Use `approval.py trust-path` to resolve the fixed user-managed manifest outside the project; `DDD_APPROVAL_TRUST_MANIFEST` is forbidden, and `--trusted-public-key` must match the fixed path and fingerprint. The checked-in key in the formal example is synthetic fixture data only.
+- Do not let a copied `status: confirmed` hide missing provenance, file digests, source adaptation, or user evidence. The registration must point back to the same confirmed template record.
+- Keep all template provenance, file digests, source notes, and user evidence inside the project so collaborators can inspect the same record.
 - Do not change `.ddd/ui-system.yaml` or `.ddd/ui-practices.yaml` from an extracted source; conflicts return to those explicit skills.
 - Do not generate implementation files, install packages, run arbitrary source commands, or start delivery in this skill.
 - Do not call `$scaffold-kit`, `$ui-system`, `$ui-practices`, `$ui-architecture`, `$delivery-loop`, or `$code-review` automatically.

@@ -22,7 +22,7 @@ A Rust backend profile is a complete, selectable technology decision. It must de
 
 The repository currently provides three deliberately separate PostgreSQL 16 choices: `rust-axum-sqlx`, `rust-axum-tokio-postgres`, and `rust-axum-toasty`. They share Axum, Tokio, the database engine, dataset, and workload for a fair comparison, but they do not share a query abstraction. Diesel is not a hidden fallback. Toasty is marked experimental and its native migration commands are recorded as unavailable; the profile therefore names the external migration runner and keeps that decision visible.
 
-Validate a profile before preparing the signed `select-profile` request:
+Validate a profile before presenting the `select-profile` decision:
 
 ```text
 python adapter-kit/scripts/validate_profile.py rust-axum-sqlx

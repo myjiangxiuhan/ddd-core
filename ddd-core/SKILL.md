@@ -9,12 +9,12 @@ description: Build a project or domain scope and one evidence-backed domain slic
 
 This is a user-invoked entrypoint. Run it for a new product idea, feature, or domain slice before implementation. One invocation may create or update the draft workflow ledger, but it must not write implementation code, schema, API, UI, infrastructure, or technology configuration.
 
-Read [workflow state](rules/workflow-state.md), [canonical keywords](rules/keywords.md), and [interaction and gates](rules/interaction.md) before doing any work. During discovery, also read [discovery interview](rules/grilling.md). In `human_led` mode, read `.ddd/working-agreement.md` and the confirmed records under `.ddd/business/`; if `business_discovery` is not `confirmed`, stop and route to `$business-lab` instead of shaping a domain design. Use the project's `.ddd/GLOSSARY.md` and ADR records when they exist; create or update them only for user-confirmed terms or decisions. The ledger is the source of truth for stage and approvals; a broad request, an enthusiastic phrase, or a draft document is not an approval.
+Read [the skill contract](rules/skill-contract.md), [workflow state](rules/workflow-state.md), [canonical keywords](rules/keywords.md), and [interaction and gates](rules/interaction.md) before doing any work. During discovery, use the model-invoked `grilling` method with [the canonical interview rules](rules/grilling.md). In `human_led` mode, read `.ddd/working-agreement.md` and the confirmed records under `.ddd/business/`; if `business_discovery` is not `confirmed`, stop and route to `$business-lab` instead of shaping a domain design. Use the project's `.ddd/GLOSSARY.md` and ADR records when they exist; create or update them only for user-confirmed terms or decisions. The ledger is the source of truth for stage and explicit decisions; a broad request, an enthusiastic phrase, or a draft document is not a decision.
 
 ## Process
 
 1. **Scope intake.** If the request spans a project or an iteration, record the goal, the smallest current slice candidate, deferred capabilities, explicit non-goals, and unresolved decisions. Keep future capabilities in the deferred register. Do not turn them into implementation tasks in this invocation.
-2. **Discovery interview.** Before shaping a design, build the decision tree and ask the whole current frontier of independent questions in one round, normally 1-4 questions. Offer options, consequences, and a clearly marked recommendation when useful, but never pick an option for the user. Record the user's answer as `user_decision`; keep recommendations as `agent_recommendation` and unanswered items `pending`.
+2. **Discovery interview.** Call the model-invoked `grilling` method to build the decision tree and ask the whole current frontier of independent questions in one round, normally 1-4 questions. Offer options, consequences, and a clearly marked recommendation when useful, but never pick an option for the user. Record the user's answer as `user_decision`; keep recommendations as `agent_recommendation` and unanswered items `pending`.
 3. **Domain understanding.** Extract only evidence-backed facts, roles, commands, rules, states, events, external actions, boundaries, and the evidence boundary. Mark each item as `confirmed`, `inferred`, `assumption`, or `pending` and record its source or missing evidence. An inference cannot become a rule or glossary term until the user confirms it.
 4. **Domain design.** Only after the essential discovery questions and the user-authored business mainline are confirmed, shape the smallest technology-neutral design for the current slice and 2-4 acceptance scenarios. For a performance-sensitive behavior, capture workload shape, ordering, consistency/staleness, latency/throughput intent, and resource constraints as pending or user-owned domain constraints; leave indexes, SQL dialect, and database-native operations to `$performance-loop` after profile selection. Show which parts came from user decisions and which remain pending. Keep canonical domain terms separate from display terms.
 5. **Design gate.** Persist the design as `draft` and ask exactly one question to confirm or correct the listed decisions and boundaries. Do not advance this gate from the user's request to implement, from a previous plan, or from inferred agreement.
@@ -31,7 +31,7 @@ Read [workflow state](rules/workflow-state.md), [canonical keywords](rules/keywo
 - `domain_design: confirmed` + separate approval naming one slice -> `slice_approval: approved` and set `active_slice`.
 - Any missing, conflicting, or stale gate -> stop and ask one precise question; do not guess.
 
-Persist user answers and gate confirmations with the bundled `workflow_gate.py` transitions. Every user transition must use a detached approval request and credential as described in [interaction and gates](rules/interaction.md); do not edit `user_decision`, `actor`, or gate fields by hand. Do not combine `confirm-design` and `approve-slice` in one invocation.
+Persist user answers and the core workflow transitions with the bundled `workflow_gate.py`. Use the user's explicit conversational evidence. Do not silently turn an inference into `user_decision`, and do not combine `confirm-design` and `approve-slice` in one invocation.
 
 ## Output contract
 
@@ -49,6 +49,7 @@ Return the workflow state, project scope, current slice, deferred capabilities, 
 
 ## Canonical rules
 
+- [Skill contract](rules/skill-contract.md) (`ddd.skill-contract`)
 - [Scope and future-capability rules](rules/scope.md) (`ddd.scope`)
 - [Human-led business investigation](../business-lab/SKILL.md) (`business-lab`)
 - [Domain language layer](../domain-modeling/SKILL.md) (`domain-modeling`)

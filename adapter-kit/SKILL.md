@@ -7,22 +7,21 @@ description: Let the user select and record one exact technology profile for an 
 
 ## Invocation
 
-This is a user-invoked technology gate. Run it only after `domain_design: confirmed`, `slice_approval: approved`, and a named `active_slice` exist in the workflow ledger. It may inspect the repository and prepare a mapping, but it must not implement code, schema, APIs, UI, infrastructure, or future capabilities.
+This is a user-invoked technology selection entrypoint. Run it after a named `active_slice` exists. It may inspect the repository and prepare a mapping, but it must not implement code, schema, APIs, UI, infrastructure, or future capabilities.
 
 Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gates](../ddd-core/rules/interaction.md), [codebase design vocabulary](../ddd-core/rules/codebase-design.md), and [profile schema](profiles/schema.md) first. For a Rust backend, run `python adapter-kit/scripts/validate_profile.py <profile-id>` before presenting the profile; a validation result is evidence, not a selection.
-Before mapping a profile, run the bundled read-only gate check for `--require technology`. A non-zero result is a hard stop; report its reason instead of repairing the ledger silently.
+Before mapping a profile, read the ledger and report any missing slice or contradictory state. Do not repair the ledger silently.
 
 ## Process
 
 1. Inspect the existing project configuration and report the exact profile already in use, if one exists. Do not infer a new profile from a domain noun or from a convenient library.
-2. Present the exact existing profile for confirmation, or, if it is missing or more than one profile could apply, present the smallest set of materially different options and their consequences. For Rust + Axum, keep `rust-axum-sqlx`, `rust-axum-tokio-postgres`, and `rust-axum-toasty` as separate choices; explain that their query model and migration boundary differ. Ask exactly one question; leave `technology_profile: pending` until the user explicitly confirms or selects one.
+2. Present the exact existing profile for confirmation, or, if it is missing or more than one profile could apply, present the smallest set of materially different options and their consequences. For Rust + Axum, keep `rust-axum-sqlx`, `rust-axum-tokio-postgres`, and `rust-axum-toasty` as separate choices; explain that their query model and migration boundary differ. Ask one question and wait; leave `technology_profile: pending` until the user explicitly confirms or selects one.
 3. After explicit confirmation or selection, persist the profile ID and version as `technology_profile: selected`. Match `framework`, `component_library`, `variant`, `target`, and backend/database fields exactly. Do not select a database because of a deferred capability.
-4. When the slice has persistence, present the exact version-pinned database profile from `performance-loop/profiles/` or the project's configured profile directory. The profile must declare the engine/version, native capabilities, SQL-generation rules, pagination, plan evidence, transaction/lock rules, and incompatibilities. Ask the user to invoke the separate signed `select-database-profile` transition; do not edit `database_profile` or call the SQL generator yourself.
-5. The `select-database-profile` transition must bind the profile file path and digest. A copied profile is acceptable only when its ID and engine version match the selected database and its capability consequences are visible to the user. Do not hide a selected database behind generic SQL.
-6. Map only the approved slice to the selected profile. Record unsupported capabilities and pending conventions instead of creating speculative adapters. For Rust backends, carry the profile's Cargo validation commands into the delivery plan; do not execute them as a side effect of profile selection. After the database profile gate, invoke `$performance-loop`; it must confirm the contract before `$delivery-loop`.
-7. Return the profile decision. If the active slice has a UI surface, tell the user to invoke `$ui-system`, then `$ui-practices`, then `$ui-architecture` as separate explicit actions; if it has persistence, tell the user to invoke `$performance-loop`; otherwise `$delivery-loop` remains the next explicit action. Stop.
+4. When the slice has persistence, show the exact version-pinned database profile options from `performance-loop/profiles/` and their consequences. Do not select or record the database here; `$performance-loop` owns that supporting record and the SQL mapping.
+5. Map only the active slice to the selected application profile. Record unsupported capabilities and pending conventions instead of creating speculative adapters. For Rust backends, carry the profile's Cargo validation commands into the delivery plan; do not execute them as a side effect of profile selection. If persistence evidence is needed, invoke `$performance-loop` as a supporting workbench before delivery.
+7. Return the profile decision. If the active slice has a UI surface, point to the missing UI foundation or composition workbench; do not prescribe a full sequence when confirmed records already exist. `$ui-architecture` is the only UI record required immediately before a UI scaffold. If persistence evidence is needed, point to `$performance-loop`; otherwise `$delivery-loop` remains the next explicit action. Stop.
 
-Use the bundled `approval.py` request/sign flow first, then run `workflow_gate.py --state .ddd/workflow-state.json --transition select-profile ... --approval <credential> --trusted-public-key <user-trust-key>` to persist the application profile. For persistence, create a second request over the selected database profile file and run `workflow_gate.py --transition select-database-profile --database-profile-id <id> --database-profile-version <engine-version> --database-profile-path <project-relative-profile> ...`. Do not edit either gate field directly or treat a chat answer alone as a persisted approval.
+Persist only the application profile with `workflow_gate.py --state .ddd/workflow-state.json --transition select-profile ... --evidence "user selected <profile>"`. Database profile and performance records belong to `$performance-loop`; all records stay in the project for collaboration.
 
 ## Output contract
 
@@ -33,8 +32,8 @@ Return the active slice ID, exact selected profile and version, user-owned techn
 - Do not invoke `ddd-core`, `ui-architecture`, `scaffold-kit`, `delivery-loop`, `repair-loop`, or another skill automatically.
 - Do not choose Redis, a database, a storage provider, or a framework because it may serve a deferred capability. A future capability such as content deduplication is not evidence for a current technology choice.
 - Do not hide database-specific behavior behind a lowest-common-denominator repository interface. If PostgreSQL, MySQL/MariaDB, SQLite, or SQL Server provides a native operation, index type, plan tool, pagination primitive, or locking behavior needed by the contract, record and test that adapter explicitly.
-- Stop when the active slice, domain confirmation, or exact profile is missing. Stop when the user has not answered a materially different profile choice.
-- Stop before SQL generation or performance baseline work when `database_profile` is missing, pending, or lacks a verified `select-database-profile` history entry.
+- Stop when the active slice or exact profile is missing. Stop when the user has not answered a materially different profile choice.
+- Stop a database tool when its selected profile record is missing, invalid, or no longer matches the file it is about to use.
 - Do not add a generic abstraction without a second concrete consumer, pre-generate unused adapters, or add a cloud-drive adapter without a separate explicit slice approval.
 
 ## Canonical rules

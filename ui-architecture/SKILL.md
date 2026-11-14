@@ -15,7 +15,7 @@ Read [workflow state](../ddd-core/rules/workflow-state.md), [interaction and gat
 python ddd-core/scripts/workflow_gate.py --state .ddd/workflow-state.json --require ui-design
 ```
 
-The profile, UI system, and UI practices must be confirmed before researching implementation components. If the active slice has no UI surface, report `not applicable` and stop. Do not infer a UI surface from a route name or a framework dependency.
+For a UI slice, the profile, UI system, and UI practices must be confirmed before researching implementation components. These are human design pauses recorded in the project. If the active slice has no UI surface, report `not applicable` and stop. Do not infer a UI surface from a route name or a framework dependency.
 
 ## Evidence collection
 
@@ -52,7 +52,7 @@ If two choices are plausible, show both consequences and ask the user. Do not ch
    - state owner and request seam;
    - wrapper policy and generator kind.
    Use `❓ **Qn — ...**` and `➡️ Recommended answer: ...`; recommendations remain `agent_recommendation` until the user answers.
-4. When the plan is ready but not confirmed, persist `ui_design: draft` with exactly one `draft-ui` transition and stop. On a later explicit confirmation, create a signed `workflow:confirm-ui` approval over `.ddd/ui-plan.yaml`, then persist `ui_design: confirmed` with exactly one `confirm-ui` transition and stop. Never perform both transitions in one invocation.
+4. Show the draft in the same turn that it is written. On a later explicit confirmation, change `.ddd/ui-plan.yaml` to `status: confirmed` and preserve the user's decision and evidence in the plan. There is no second ledger confirmation step; the plan and Git history are the shared review trail.
 
 ## Output contract
 

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Feedback Loop"
+  short_description: "Reproduce one failure and lock its regression signal"
+  default_prompt: "Use the feedback-loop method inside the active repair or performance workflow; do not change the ledger or widen the slice."
+policy:
+  allow_implicit_invocation: true
